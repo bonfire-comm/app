@@ -17,7 +17,7 @@ function Button({ className = '', ...props }: DetailedHTMLProps<ButtonHTMLAttrib
 
 function VideoBackground() {
   return (
-    <section className="h-screen absolute top-0 left-0 right-0 bottom-0 -z-10">
+    <section className="h-screen absolute top-0 left-0 right-0 bottom-0 -z-20">
       <motion.span
         className="w-full h-full absolute top-0 left-0 bg-vantactGray-500 bg-opacity-70"
         initial={{ opacity: 0 }}
@@ -33,7 +33,7 @@ function VideoBackground() {
 
 function Nav() {
   return (
-    <nav className="px-12 xl:px-32 pt-12 xl:pt-20 flex justify-between items-center mb-52">
+    <nav className="px-12 xl:px-32 pt-12 xl:pt-20 flex justify-between items-center z-50">
       <motion.span
         initial={{ opacity: 0, x: -75 }}
         animate={{ opacity: 1, x: 0 }}
@@ -63,8 +63,8 @@ export default function Home() {
 
       <Nav />
 
-      <motion.main
-        className="flex flex-col items-center"
+      <motion.section
+        className="flex flex-col items-center justify-center w-full h-full absolute top-0 left-0 right-0 bottom-0 -z-[1]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, ease: 'easeInOut', delay: GLOBAL_DELAY + 0.2 }}
@@ -87,7 +87,7 @@ export default function Home() {
             <Button>Open in your browser</Button>
           </Link>
         </motion.span>
-      </motion.main>
+      </motion.section>
 
       <VideoBackground />
     </>
