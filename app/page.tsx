@@ -1,5 +1,6 @@
+'use client';
+
 import Logo from '@/components/Logo';
-import Meta from '@/components/Meta';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { DetailedHTMLProps, ButtonHTMLAttributes } from 'react';
@@ -10,7 +11,7 @@ function Button({ className = '', ...props }: DetailedHTMLProps<ButtonHTMLAttrib
   return (
     <button
       {...props}
-      className={`px-6 py-2 rounded-full bg-red-500 hover:-translate-y-1 transition-transform duration-300 ease-in-out text-white font-bold text-lg cursor-pointer ${className}`}
+      className={`px-6 py-2 rounded-full font-mulish bg-red-500 hover:-translate-y-1 transition-transform duration-300 ease-in-out text-white font-bold text-lg cursor-pointer ${className}`}
     />
   );
 }
@@ -33,7 +34,7 @@ function VideoBackground() {
 
 function Nav() {
   return (
-    <nav className="px-12 xl:px-32 pt-12 xl:pt-20 flex justify-between items-center z-50">
+    <nav className="px-12 xl:px-32 pt-12 flex justify-between items-center z-50">
       <motion.span
         initial={{ opacity: 0, x: -75 }}
         animate={{ opacity: 1, x: 0 }}
@@ -59,8 +60,6 @@ function Nav() {
 export default function Home() {
   return (
     <>
-      <Meta />
-
       <Nav />
 
       <motion.section

@@ -3,5 +3,5 @@
 @tailwind utilities;
 
 body {
-  @apply bg-vantactGray-500 text-white overflow-x-hidden;
+  @apply bg-vantactGray-500 text-white overflow-x-hidden font-mulish;
 }

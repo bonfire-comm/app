@@ -1,5 +1,4 @@
-import '../styles/globals.css';
-import type { AppProps } from 'next/app';
+import '@/styles/globals.css';
 import { Big_Shoulders_Display as BigShouldersDisplay, Mulish } from '@next/font/google';
 
 const bigShouldersDisplay = BigShouldersDisplay({
@@ -12,10 +11,12 @@ const mulish = Mulish({
   variable: '--font-mulish'
 });
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function RootLayout({ children }: {
+  children: React.ReactNode;
+}) {
   return (
-    <main className={[bigShouldersDisplay.variable, mulish.variable, 'font-mulish'].join(' ')}>
-      <Component {...pageProps} />
-    </main>
+    <html lang="en" className={[bigShouldersDisplay.variable, mulish.variable].join(' ')}>
+      <body>{children}</body>
+    </html>
   );
 }
