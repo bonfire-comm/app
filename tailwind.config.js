@@ -1,7 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  important: true,
   content: [
-    './app/**/*.{js,ts,jsx,tsx}',
+    './pages/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
@@ -22,6 +23,18 @@ module.exports = {
           700: '#0a1014',
           800: '#070b0e',
           900: '#040608'
+        },
+        cloudy: {
+          50: '#f4f5f6',
+          100: '#ccd0d5',
+          200: '#a4abb4',
+          300: '#7c8693',
+          400: '#536171',
+          500: '#293a50',
+          600: '#233141',
+          700: '#1b2532',
+          800: '#121a22',
+          900: '#0a0e13'
         }
       }
     },
