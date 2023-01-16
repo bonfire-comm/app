@@ -8,11 +8,12 @@ import useInternal from '@/lib/store';
 import { useForm } from '@mantine/form';
 import firebaseClient from '@/lib/firebase';
 import { useToggle } from '@mantine/hooks';
+import { z } from 'zod';
 import { useRouter } from 'next/router';
 import useUser from '@/lib/store/user';
 import { useEffect } from 'react';
 
-export default function Login() {
+export default function Register() {
   const uid = useUser((s) => s.uid);
 
   const router = useRouter();
@@ -22,7 +23,24 @@ export default function Login() {
   const form = useForm({
     initialValues: {
       email: '',
-      password: ''
+      password: '',
+      confirm: '',
+    },
+    validateInputOnChange: true,
+    validate: {
+      email: (value) => {
+        if (!z.string().email().safeParse(value).success) return 'Invalid email address';
+      },
+      password: (value) => {
+        if (value.length < 8) {
+          return 'Password must be at least 8 characters';
+        }
+      },
+      confirm: (value, values) => {
+        if (value !== values.password) {
+          return 'Passwords do not match';
+        }
+      }
     }
   });
 
@@ -30,14 +48,14 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await firebaseClient.signInWithEmailAndPassword(values.email, values.password);
+      await firebaseClient.createUserWithEmailAndPassword(values.email, values.password);
 
-      router.push('/app');
+      router.push('/onboarding');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
+      if (error.code === 'auth/email-already-in-use') {
         return form.setErrors({
-          email: 'User not found',
+          email: 'Email already in use',
         });
       }
 
@@ -66,22 +84,19 @@ export default function Login() {
         exit={{ opacity: 0, y: -100 }}
         transition={{ duration: 0.5, delay, ease: 'anticipate' }}
       >
-        <section className="border border-cloudy-500 bg-cloudy-600 w-[52rem] h-[32rem] rounded-xl p-8 flex flex-col">
-          <h2 className="font-extrabold text-3xl text-center mb-2">Welcome back!</h2>
-          <p className="opacity-75 text-center mb-8">Nice to see you again!</p>
+        <section className="border border-cloudy-500 bg-cloudy-600 w-[52rem] h-[37rem] rounded-xl p-8 flex flex-col">
+          <h2 className="font-extrabold text-3xl text-center mb-2">New here?</h2>
+          <p className="opacity-75 text-center mb-8">Welcome!</p>
 
           <section className="flex flex-grow gap-5 mb-3">
             <form onSubmit={onSignIn} className="flex flex-col justify-between flex-grow w-1/2">
               <section>
-                <TextInput {...form.getInputProps('email')} required label="EMAIL" type="email" className="mb-4" />
-                <TextInput {...form.getInputProps('password')} required label="PASSWORD" type="password" className="mb-3" />
-
-                <Link href="/reset" className="font-semibold text-light-blue-600 hover:text-light-blue-500 transition-colors duration-200 ease-in-out text-sm">
-                  Forgot password
-                </Link>
+                <TextInput {...form.getInputProps('email')} label="EMAIL" type="email" className="mb-4" />
+                <TextInput {...form.getInputProps('password')} label="PASSWORD" type="password" className="mb-3" />
+                <TextInput {...form.getInputProps('confirm')} label="CONFIRM PASSWORD" type="password" className="mb-3" />
               </section>
 
-              <Button type="submit" loading={loading}>Sign in</Button>
+              <Button type="submit" loading={loading}>Sign up</Button>
             </form>
 
             <section className="flex-grow w-1/2 flex flex-col">
@@ -103,7 +118,7 @@ export default function Login() {
             </section>
           </section>
 
-          <p className="text-sm text-light-blue-600">Don&apos;t have an account? <Link href="/register" className="text-light-blue-400 opacity-90 hover:opacity-100 hover:text-light-blue-200 transition-all duration-200 ease-in-out font-bold">Sign up</Link></p>
+          <p className="text-sm text-light-blue-600">Already have an account? <Link href="/login" className="text-light-blue-400 opacity-90 hover:opacity-100 hover:text-light-blue-200 transition-all duration-200 ease-in-out font-bold">Sign in</Link></p>
         </section>
       </motion.section>
     </>

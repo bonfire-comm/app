@@ -1,7 +1,7 @@
-import Layout from '@/components/Layout';
 import Logo from '@/components/Logo';
 import Meta from '@/components/Meta';
 import { GLOBAL_DELAY } from '@/components/VideoBackground';
+import useUser from '@/lib/store/user';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { DetailedHTMLProps, ButtonHTMLAttributes } from 'react';
@@ -16,6 +16,8 @@ function Button({ className = '', ...props }: DetailedHTMLProps<ButtonHTMLAttrib
 }
 
 function Nav() {
+  const uid = useUser((s) => s.uid);
+
   return (
     <nav className="px-12 xl:px-32 pt-12 flex justify-between items-center z-50">
       <motion.span
@@ -32,17 +34,27 @@ function Nav() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, ease: 'easeInOut', delay: GLOBAL_DELAY }}
       >
-        <Link href="/app">
-          <Button>Open Bonfire</Button>
-        </Link>
+        {uid && (
+          <Link href="/app">
+            <Button>Open Bonfire</Button>
+          </Link>
+        )}
+
+        {!uid && (
+          <Link href="/login">
+            <Button>Login</Button>
+          </Link>
+        )}
       </motion.section>
     </nav>
   );
 }
 
 export default function Home() {
+  const uid = useUser((s) => s.uid);
+
   return (
-    <Layout>
+    <>
       <Meta />
       <Nav />
 
@@ -66,11 +78,11 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.75, ease: 'anticipate', delay: GLOBAL_DELAY + 0.5 }}
         >
-          <Link href="/app">
+          <Link href={uid ? '/app' : '/login'}>
             <Button>Open in your browser</Button>
           </Link>
         </motion.span>
       </motion.section>
-    </Layout>
+    </>
   );
 }

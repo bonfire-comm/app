@@ -1,7 +1,12 @@
 import '../styles/globals.css';
+import '@/lib/firebase';
+
 import type { AppProps } from 'next/app';
 import { Big_Shoulders_Display as BigShouldersDisplay, Mulish } from '@next/font/google';
 import { MantineProvider, createEmotionCache } from '@mantine/core';
+import VideoBackground from '@/components/VideoBackground';
+import { AnimatePresence } from 'framer-motion';
+import useInternal from '@/lib/store';
 
 const bigShouldersDisplay = BigShouldersDisplay({
   subsets: ['latin'],
@@ -18,14 +23,14 @@ const cache = createEmotionCache({
   prepend: false
 });
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App({ Component, pageProps, router }: AppProps) {
   return (
     <MantineProvider
       withGlobalStyles
       withCSSVariables
       emotionCache={cache}
       theme={{
-        fontFamily: 'Mulish, sans-serif',
+        fontFamily: 'var(--font-mulish)',
         colorScheme: 'dark',
         colors: {
           dark: [
@@ -45,14 +50,37 @@ export default function App({ Component, pageProps }: AppProps) {
         components: {
           TextInput: {
             classNames: {
-              label: 'font-extrabold text-cloudy-300'
+              label: 'font-extrabold text-cloudy-300 mb-1 block',
+              input: 'border-none rounded-xl h-auto py-2 px-5 font-medium'
+            }
+          },
+          Button: {
+            classNames: {
+              root: 'rounded-xl font-extrabold text-lg h-auto py-4 text-cloudy-600 bg-light-blue-500 hover:bg-light-blue-600 transition-colors duration-200 ease-in-out'
+            },
+            defaultProps: {
+              loaderProps: {
+                color: 'blue'
+              }
             }
           }
         }
       }}
     >
-      <main className={[bigShouldersDisplay.variable, mulish.variable].join(' ')}>
-        <Component {...pageProps} />
+      <main className={[bigShouldersDisplay.variable, mulish.variable, 'font-mulish'].join(' ')}>
+        <AnimatePresence
+          mode="wait"
+          presenceAffectsLayout
+          onExitComplete={() => {
+            if (useInternal.getState().initialDelay !== 0) {
+              useInternal.setState({ initialDelay: 0 });
+            }
+          }}
+        >
+          <Component {...pageProps} key={router.asPath} />
+        </AnimatePresence>
+
+        <VideoBackground />
       </main>
     </MantineProvider>
   );
