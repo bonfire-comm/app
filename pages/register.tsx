@@ -73,6 +73,8 @@ export default function Register() {
     }
   }, [uid, router]);
 
+  if (uid) return null;
+
   return (
     <>
       <Meta page="Login" />
@@ -91,7 +93,7 @@ export default function Register() {
           <section className="flex flex-grow gap-5 mb-3">
             <form onSubmit={onSignIn} className="flex flex-col justify-between flex-grow w-1/2">
               <section>
-                <TextInput {...form.getInputProps('email')} label="EMAIL" type="email" className="mb-4" />
+                <TextInput {...form.getInputProps('email')} label="EMAIL" className="mb-4" />
                 <TextInput {...form.getInputProps('password')} label="PASSWORD" type="password" className="mb-3" />
                 <TextInput {...form.getInputProps('confirm')} label="CONFIRM PASSWORD" type="password" className="mb-3" />
               </section>

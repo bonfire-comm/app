@@ -7,6 +7,8 @@ import { MantineProvider, createEmotionCache } from '@mantine/core';
 import VideoBackground from '@/components/VideoBackground';
 import { AnimatePresence } from 'framer-motion';
 import useInternal from '@/lib/store';
+import { NotificationsProvider } from '@mantine/notifications';
+import { useEffect } from 'react';
 
 const bigShouldersDisplay = BigShouldersDisplay({
   subsets: ['latin'],
@@ -24,6 +26,10 @@ const cache = createEmotionCache({
 });
 
 export default function App({ Component, pageProps, router }: AppProps) {
+  useEffect(() => {
+    document.body.classList.add(bigShouldersDisplay.variable, mulish.variable);
+  }, []);
+
   return (
     <MantineProvider
       withGlobalStyles
@@ -56,18 +62,25 @@ export default function App({ Component, pageProps, router }: AppProps) {
           },
           Button: {
             classNames: {
-              root: 'rounded-xl font-extrabold text-lg h-auto py-4 text-cloudy-600 bg-light-blue-500 hover:bg-light-blue-600 transition-colors duration-200 ease-in-out'
+              root: 'disabled:opacity-50 pointer-events-auto disabled:cursor-not-allowed rounded-xl font-extrabold text-lg h-auto py-4 text-cloudy-600 bg-light-blue-500 hover:bg-light-blue-600 transition-colors duration-200 ease-in-out'
             },
             defaultProps: {
               loaderProps: {
                 color: 'blue'
               }
             }
+          },
+          Notification: {
+            classNames: {
+              title: 'font-bold',
+            }
           }
         }
       }}
     >
-      <main className={[bigShouldersDisplay.variable, mulish.variable, 'font-mulish'].join(' ')}>
+      <NotificationsProvider
+        zIndex={99999999}
+      >
         <AnimatePresence
           mode="wait"
           presenceAffectsLayout
@@ -81,7 +94,7 @@ export default function App({ Component, pageProps, router }: AppProps) {
         </AnimatePresence>
 
         <VideoBackground />
-      </main>
+      </NotificationsProvider>
     </MantineProvider>
   );
 }

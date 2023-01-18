@@ -11,6 +11,7 @@ import { useToggle } from '@mantine/hooks';
 import { useRouter } from 'next/router';
 import useUser from '@/lib/store/user';
 import { useEffect } from 'react';
+import { z } from 'zod';
 
 export default function Login() {
   const uid = useUser((s) => s.uid);
@@ -23,6 +24,9 @@ export default function Login() {
     initialValues: {
       email: '',
       password: ''
+    },
+    validate: {
+      email: (value) => !z.string().email().safeParse(value).success && 'Invalid email',
     }
   });
 
@@ -41,6 +45,12 @@ export default function Login() {
         });
       }
 
+      if (error.code === 'auth/wrong-password') {
+        return form.setErrors({
+          password: 'Wrong password',
+        });
+      }
+
       form.setErrors({
         email: error.code
       });
@@ -54,6 +64,8 @@ export default function Login() {
       router.push('/app');
     }
   }, [uid, router]);
+
+  if (uid) return null;
 
   return (
     <>
@@ -73,8 +85,8 @@ export default function Login() {
           <section className="flex flex-grow gap-5 mb-3">
             <form onSubmit={onSignIn} className="flex flex-col justify-between flex-grow w-1/2">
               <section>
-                <TextInput {...form.getInputProps('email')} required label="EMAIL" type="email" className="mb-4" />
-                <TextInput {...form.getInputProps('password')} required label="PASSWORD" type="password" className="mb-3" />
+                <TextInput {...form.getInputProps('email')} label="EMAIL" className="mb-4" />
+                <TextInput {...form.getInputProps('password')} label="PASSWORD" type="password" className="mb-3" />
 
                 <Link href="/reset" className="font-semibold text-light-blue-600 hover:text-light-blue-500 transition-colors duration-200 ease-in-out text-sm">
                   Forgot password

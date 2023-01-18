@@ -1,8 +1,13 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Auth, createUserWithEmailAndPassword, getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { Auth, User, confirmPasswordReset, connectAuthEmulator, createUserWithEmailAndPassword, getAuth, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, verifyPasswordResetCode } from 'firebase/auth';
+import { FirebaseStorage, connectStorageEmulator, getDownloadURL, getStorage, ref as storageRef, uploadBytes } from 'firebase/storage';
+import { omit } from 'lodash-es';
+import Router from 'next/router';
 import useUser from '../store/user';
 import Providers from './authProviders';
 import useInternal from '../store';
+// eslint-disable-next-line import/no-cycle
+import fetcher from '../api/fetcher';
 
 export class Firebase {
   readonly firebaseConfig = {
@@ -19,20 +24,42 @@ export class Firebase {
 
   public auth: Auth;
 
+  public storage: FirebaseStorage;
+
   constructor() {
     this.app = initializeApp(this.firebaseConfig);
     this.auth = getAuth(this.app);
+    this.storage = getStorage(this.app);
+
+    if (process.env.NODE_ENV === 'development') {
+      connectAuthEmulator(this.auth, 'http://localhost:9099');
+      connectStorageEmulator(this.storage, 'localhost', 9199);
+    }
 
     this.registerListeners();
   }
 
   registerListeners() {
-    onAuthStateChanged(this.auth, (user) => {
-      useUser.setState(user ?? {}, true);
-      useInternal.setState({ userLoaded: true });
-    });
+    onAuthStateChanged(this.auth, (user) => this.userChanged(user));
   }
 
+  async userChanged(user: User | null) {
+    let data = {};
+
+    if (user) {
+      const res = await fetcher.get<SemanticResponse<UserData>>('/users/me').catch(() => null);
+
+      data = {
+        ...user,
+        ...omit(res?.data.payload, ['name', 'image'])
+      } as User & Omit<UserData, 'name' | 'image'>;
+    }
+
+    useUser.setState(data, true);
+    useInternal.setState({ userLoaded: true });
+  }
+
+  // Auth
   signInWithEmailAndPassword(email: string, password: string) {
     return signInWithEmailAndPassword(this.auth, email, password);
   }
@@ -45,8 +72,63 @@ export class Firebase {
     return signInWithPopup(this.auth, Providers[provider]);
   }
 
-  signOut() {
-    return this.auth.signOut();
+  sendResetPasswordEmail(email: string) {
+    return sendPasswordResetEmail(this.auth, email);
+  }
+
+  changePassword(code: string, password: string) {
+    return confirmPasswordReset(this.auth, code, password);
+  }
+
+  verifyPasswordResetCode(code: string) {
+    return verifyPasswordResetCode(this.auth, code);
+  }
+
+  async signOut(redirect = false) {
+    useUser.setState({}, true);
+    await this.auth.signOut();
+
+    if (redirect) {
+      Router.push('/login');
+    }
+  }
+
+  async refetchUser() {
+    await this.auth.currentUser?.reload();
+    await this.userChanged(this.auth.currentUser);
+  }
+
+  // Storage
+  uploadFile(path: string, file: File | Blob | Uint8Array | ArrayBuffer) {
+    const ref = storageRef(this.storage, path);
+
+    return uploadBytes(ref, file);
+  }
+
+  getFileUrl(path: string) {
+    const ref = storageRef(this.storage, path);
+
+    return getDownloadURL(ref);
+  }
+
+  async uploadProfilePicture(file: File | Blob | Uint8Array | ArrayBuffer, updateProfile = true) {
+    const filename = `${this.auth.currentUser?.uid}-${Date.now()}.webp`;
+    await this.uploadFile(`pictures/${filename}`, file);
+
+    const url = `${(await this.getFileUrl(`pictures/${filename}`)).split('?')[0]}?alt=media`;
+
+    if (updateProfile) {
+      await fetcher('/users/me', {
+        method: 'POST',
+        data: {
+          image: url
+        }
+      });
+
+      await this.refetchUser();
+    }
+
+    return url;
   }
 }
 
