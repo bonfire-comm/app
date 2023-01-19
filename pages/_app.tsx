@@ -9,6 +9,7 @@ import { AnimatePresence } from 'framer-motion';
 import useInternal from '@/lib/store';
 import { NotificationsProvider } from '@mantine/notifications';
 import { useEffect } from 'react';
+import TokenCookieProvider from '@/components/TokenCookieProvider';
 
 const bigShouldersDisplay = BigShouldersDisplay({
   subsets: ['latin'],
@@ -81,19 +82,21 @@ export default function App({ Component, pageProps, router }: AppProps) {
       <NotificationsProvider
         zIndex={99999999}
       >
-        <AnimatePresence
-          mode="wait"
-          presenceAffectsLayout
-          onExitComplete={() => {
-            if (useInternal.getState().initialDelay !== 0) {
-              useInternal.setState({ initialDelay: 0 });
-            }
-          }}
-        >
-          <Component {...pageProps} key={router.asPath} />
-        </AnimatePresence>
+        <TokenCookieProvider>
+          <AnimatePresence
+            mode="wait"
+            presenceAffectsLayout
+            onExitComplete={() => {
+              if (useInternal.getState().initialDelay !== 0) {
+                useInternal.setState({ initialDelay: 0 });
+              }
+            }}
+          >
+            <Component {...pageProps} key={router.asPath} />
+          </AnimatePresence>
 
-        <VideoBackground />
+          <VideoBackground />
+        </TokenCookieProvider>
       </NotificationsProvider>
     </MantineProvider>
   );

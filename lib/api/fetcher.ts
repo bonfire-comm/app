@@ -8,7 +8,7 @@ const fetcher = axios.create({
 });
 
 fetcher.interceptors.request.use(async (config) => {
-  const token = await firebaseClient.auth.currentUser?.getIdToken(true);
+  const token = await firebaseClient.auth.currentUser?.getIdToken();
 
   if (token) {
     if (config.headers) {

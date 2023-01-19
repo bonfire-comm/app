@@ -63,7 +63,8 @@ export default function Login() {
     if (uid) {
       router.push('/app');
     }
-  }, [uid, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid]);
 
   if (uid) return null;
 

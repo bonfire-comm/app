@@ -15,6 +15,11 @@ export default function Protected({ children, fallback = null }: { children: Rea
   const isLoaded = useInternal((s) => s.userLoaded);
 
   useEffect(() => {
+    router.prefetch('/login');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (!isLoaded) return;
     if (!uid && router.pathname !== PATHS.login) {
       router.push(PATHS.login);
@@ -25,7 +30,8 @@ export default function Protected({ children, fallback = null }: { children: Rea
       router.push(PATHS.onboarding);
       return;
     };
-  }, [uid, isLoaded, router, name]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid, isLoaded, name]);
 
   if (!isLoaded || !uid || (!name && router.pathname !== PATHS.onboarding)) return <>{fallback}</>;
 

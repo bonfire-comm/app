@@ -9,7 +9,7 @@ import { faImage, faPencil, faUpload, faXmark } from '@fortawesome/free-solid-sv
 import { createRef, useEffect, useMemo, useState } from 'react';
 import centerAspectCrop from '@/lib/helpers/centerAspectRatio';
 import { Button } from '@mantine/core';
-import { useClickOutside } from '@mantine/hooks';
+import { useClickOutside, useToggle } from '@mantine/hooks';
 
 const RESIZE_SIZE = 512;
 
@@ -21,7 +21,16 @@ interface Props extends Omit<ReactCropProps, 'onChange'> {
   onPick?: (image: File | Blob | null) => void;
 }
 
-export default function ImagePicker({ src, enableCropping, onChange = noop, onCrop = noop, onPick = noop, ...props }: Props) {
+export default function ImagePicker({ src: initialSrc, enableCropping, onChange = noop, onCrop = noop, onPick = noop, ...props }: Props) {
+  const [isDirty, controlDirty] = useToggle();
+  const [src, setSrc] = useState<string | null | undefined>(null);
+
+  useEffect(() => {
+    if (isDirty) return;
+
+    setSrc(initialSrc);
+  }, [initialSrc, isDirty]);
+
   const [cropped, setCropped] = useState(false);
   const [crop, setCrop] = useState<Crop | undefined>();
   const [selected, setSelected] = useState<File | Blob | null>(null);
@@ -114,6 +123,8 @@ export default function ImagePicker({ src, enableCropping, onChange = noop, onCr
     setCrop(undefined);
     setSelected(null);
     onPick(null);
+    controlDirty(true);
+    setSrc(null);
   };
 
   const enableEditing = () => {
@@ -131,11 +142,11 @@ export default function ImagePicker({ src, enableCropping, onChange = noop, onCr
 
   const clickOutsideRef = useClickOutside(() => processCrop());
 
-  if ((!src && !selectedUri) || !enableCropping || cropped) {
+  if (src || (!src && !selectedUri) || !enableCropping || cropped) {
     return (
       <section className="relative flex-grow">
-        {selected && (
-          <section className="z-10 absolute top-3 right-3 flex gap-2">
+        <section className="z-10 absolute top-3 right-3 flex gap-2">
+          {selected && (
             <span
               className="cursor-pointer w-6 h-6 grid place-items-center bg-cloudy-500 rounded bg-opacity-90 border border-cloudy-500"
               onClick={enableEditing}
@@ -145,7 +156,9 @@ export default function ImagePicker({ src, enableCropping, onChange = noop, onCr
                 size="xs"
               />
             </span>
+          )}
 
+          {(src || selectedUri) && (
             <span
               className="cursor-pointer w-6 h-6 grid place-items-center bg-cloudy-500 rounded bg-opacity-90 border border-cloudy-500"
               onClick={removePick}
@@ -154,8 +167,8 @@ export default function ImagePicker({ src, enableCropping, onChange = noop, onCr
                 icon={faXmark}
               />
             </span>
-          </section>
-        )}
+          )}
+        </section>
 
         <Dropzone
           onDrop={(files) => {

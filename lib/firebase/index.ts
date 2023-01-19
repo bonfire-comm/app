@@ -1,7 +1,6 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import { Auth, User, confirmPasswordReset, connectAuthEmulator, createUserWithEmailAndPassword, getAuth, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, verifyPasswordResetCode } from 'firebase/auth';
 import { FirebaseStorage, connectStorageEmulator, getDownloadURL, getStorage, ref as storageRef, uploadBytes } from 'firebase/storage';
-import { omit } from 'lodash-es';
 import Router from 'next/router';
 import useUser from '../store/user';
 import Providers from './authProviders';
@@ -51,8 +50,8 @@ export class Firebase {
 
       data = {
         ...user,
-        ...omit(res?.data.payload, ['name', 'image'])
-      } as User & Omit<UserData, 'name' | 'image'>;
+        ...res
+      } as User & UserData;
     }
 
     useUser.setState(data, true);
@@ -84,7 +83,7 @@ export class Firebase {
     return verifyPasswordResetCode(this.auth, code);
   }
 
-  async signOut(redirect = false) {
+  async signOut(redirect = true) {
     useUser.setState({}, true);
     await this.auth.signOut();
 
