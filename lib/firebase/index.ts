@@ -1,6 +1,25 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Auth, User, confirmPasswordReset, connectAuthEmulator, createUserWithEmailAndPassword, getAuth, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, verifyPasswordResetCode } from 'firebase/auth';
-import { FirebaseStorage, connectStorageEmulator, getDownloadURL, getStorage, ref as storageRef, uploadBytes } from 'firebase/storage';
+import {
+  Auth,
+  User,
+  confirmPasswordReset,
+  connectAuthEmulator,
+  createUserWithEmailAndPassword,
+  getAuth,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  verifyPasswordResetCode,
+} from 'firebase/auth';
+import {
+  FirebaseStorage,
+  connectStorageEmulator,
+  getDownloadURL,
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+} from 'firebase/storage';
 import Router from 'next/router';
 import useUser from '../store/user';
 import Providers from './authProviders';
@@ -16,7 +35,7 @@ export class Firebase {
     storageBucket: process.env.NEXT_PUBLIC_STORAGE_BUCKET,
     messagingSenderId: process.env.NEXT_PUBLIC_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_APP_ID,
-    measurementId: process.env.NEXT_PUBLIC_MEASUREMENT_ID
+    measurementId: process.env.NEXT_PUBLIC_MEASUREMENT_ID,
   };
 
   public app: FirebaseApp;
@@ -46,11 +65,13 @@ export class Firebase {
     let data = {};
 
     if (user) {
-      const res = await fetcher.get<SemanticResponse<UserData>>('/users/me').catch(() => null);
+      const res = await fetcher
+        .get<SemanticResponse<UserData>>('/users/me')
+        .catch(() => null);
 
       data = {
         ...user,
-        ...res
+        ...res,
       } as User & UserData;
     }
 
@@ -110,18 +131,23 @@ export class Firebase {
     return getDownloadURL(ref);
   }
 
-  async uploadProfilePicture(file: File | Blob | Uint8Array | ArrayBuffer, updateProfile = true) {
+  async uploadProfilePicture(
+    file: File | Blob | Uint8Array | ArrayBuffer,
+    updateProfile = true
+  ) {
     const filename = `${this.auth.currentUser?.uid}-${Date.now()}.webp`;
     await this.uploadFile(`pictures/${filename}`, file);
 
-    const url = `${(await this.getFileUrl(`pictures/${filename}`)).split('?')[0]}?alt=media`;
+    const url = `${
+      (await this.getFileUrl(`pictures/${filename}`)).split('?')[0]
+    }?alt=media`;
 
     if (updateProfile) {
       await fetcher('/users/me', {
         method: 'POST',
         data: {
-          image: url
-        }
+          image: url,
+        },
       });
 
       await this.refetchUser();

@@ -25,4 +25,6 @@ declare global {
     P extends { [key: string]: any } = { [key: string]: any },
     Q extends ParsedUrlQuery = ParsedUrlQuery
   > = (context: GetServerSidePropsContext<Q> & { user: UserRecord}) => Promise<GetServerSidePropsResult<P>>;
+
+  type UserOptions = UserData & { image?: string; name: string };
 }

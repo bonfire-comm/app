@@ -1,6 +1,5 @@
 import createApiHandler from '@/lib/api/createHandler';
 import admin from '@/lib/firebase/admin';
-import { User } from 'firebase/auth';
 import { isEmpty, omit } from 'lodash-es';
 import { z } from 'zod';
 
@@ -34,7 +33,7 @@ const createNewUser = async (id: string, insert = true) => {
   return userEntry;
 };
 
-export default createApiHandler<User>(['verifyFireauth'])
+export default createApiHandler<UserOptions>(['verifyFireauth'])
   .get(async (req, res) => {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -48,8 +47,16 @@ export default createApiHandler<User>(['verifyFireauth'])
         await createNewUser(uid);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const refreshed = (await current.ref.get()).data()!;
+
       return res.status(200).json({
-        payload: (await current.ref.get()).data() as User
+        payload: {
+          ...(refreshed as UserOptions),
+          createdAt: refreshed.createdAt.toDate(),
+          name: req.user.displayName as string,
+          image: req.user.photoURL
+        }
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
@@ -112,8 +119,14 @@ export default createApiHandler<User>(['verifyFireauth'])
           .update(omitted);
       }
 
+      const refreshed = (await current.ref.get()).data() as UserData;
+
       return res.status(200).json({
-        payload: (await current.ref.get()).data() as User
+        payload: {
+          ...refreshed,
+          name: req.user.displayName as string,
+          image: req.user.photoURL
+        }
       });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
