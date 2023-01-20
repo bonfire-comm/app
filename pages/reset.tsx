@@ -15,8 +15,7 @@ import showErrorNotification from '@/lib/helpers/showErrorNotification';
 import Twemoji from '@/components/Twemoji';
 
 export default function Reset() {
-  const uid = useUser((s) => s.uid);
-
+  const id = useUser((s) => s?.id);
   const router = useRouter();
   const [loading, setLoading] = useToggle();
   const delay = useInternal((state) => state.initialDelay);
@@ -84,10 +83,10 @@ export default function Reset() {
   });
 
   useEffect(() => {
-    if (uid) {
+    if (id) {
       router.push('/app');
     }
-  }, [uid, router]);
+  }, [id, router]);
 
   const resetForm = useForm({
     initialValues: {
@@ -139,7 +138,7 @@ export default function Reset() {
     }
   });
 
-  if (uid) return null;
+  if (id) return null;
 
   return (
     <>

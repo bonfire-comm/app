@@ -7,13 +7,12 @@ import { useToggle } from '@mantine/hooks';
 import { useRouter } from 'next/router';
 import useUser from '@/lib/store/user';
 import ImagePicker from '@/components/ImagePicker';
-import firebaseClient from '@/lib/firebase';
-import fetcher from '@/lib/api/fetcher';
 import { useEffect } from 'react';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
+import firebaseClient from '@/lib/firebase';
 
 export default function Onboarding() {
-  const photo = useUser((s) => s.photoURL);
+  const photo = useUser((s) => s?.image);
   const router = useRouter();
   const [loading, setLoading] = useToggle();
   const delay = useInternal((state) => state.initialDelay);
@@ -47,22 +46,8 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
-      const data = {
-        name: values.name,
-      } as { name: string; image?: string };
+      await firebaseClient.managers.user.updateUser(values);
 
-      if (values.image) {
-        const url = await firebaseClient.uploadProfilePicture(values.image, false);
-
-        data.image = url;
-      }
-
-      await fetcher('/users/me', {
-        method: 'POST',
-        data
-      });
-
-      await firebaseClient.refetchUser();
       await router.push('/app');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {

@@ -1,6 +1,6 @@
-import { User } from 'firebase/auth';
 import { create } from 'zustand';
+import User from '../classes/user';
 
-const useUser = create<Partial<User & Omit<UserData, 'name' | 'image'>>>(() => ({}));
+const useUser = create<User | null>(() => null);
 
 export default useUser;

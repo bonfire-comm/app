@@ -11,7 +11,7 @@ const PATHS = {
 
 export default function Protected({ children, fallback = null }: { children: ReactNode; fallback?: ReactNode }) {
   const router = useRouter();
-  const [uid, name] = useUser((s) => [s.uid, s.displayName], shallow);
+  const [id, name] = useUser((s) => [s?.id, s?.name], shallow);
   const isLoaded = useInternal((s) => s.userLoaded);
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function Protected({ children, fallback = null }: { children: Rea
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (!uid && router.pathname !== PATHS.login) {
+    if (!id && router.pathname !== PATHS.login) {
       router.push(PATHS.login);
       return;
     }
@@ -31,9 +31,9 @@ export default function Protected({ children, fallback = null }: { children: Rea
       return;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid, isLoaded, name]);
+  }, [id, isLoaded, name]);
 
-  if (!isLoaded || !uid || (!name && router.pathname !== PATHS.onboarding)) return <>{fallback}</>;
+  if (!isLoaded || !id || (!name && router.pathname !== PATHS.onboarding)) return <>{fallback}</>;
 
   return <>{children}</>;
 }

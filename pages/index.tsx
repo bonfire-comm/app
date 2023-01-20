@@ -16,7 +16,7 @@ function Button({ className = '', ...props }: DetailedHTMLProps<ButtonHTMLAttrib
 }
 
 function Nav() {
-  const uid = useUser((s) => s.uid);
+  const id = useUser((s) => s?.id);
 
   return (
     <nav className="px-12 xl:px-32 pt-12 flex justify-between items-center z-50">
@@ -34,13 +34,13 @@ function Nav() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, ease: 'easeInOut', delay: GLOBAL_DELAY }}
       >
-        {uid && (
+        {id && (
           <Link href="/app">
             <Button>Open Bonfire</Button>
           </Link>
         )}
 
-        {!uid && (
+        {!id && (
           <Link href="/login">
             <Button>Login</Button>
           </Link>
@@ -51,7 +51,7 @@ function Nav() {
 }
 
 export default function Home() {
-  const uid = useUser((s) => s.uid);
+  const id = useUser((s) => s?.id);
 
   return (
     <>
@@ -78,7 +78,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.75, ease: 'anticipate', delay: GLOBAL_DELAY + 0.5 }}
         >
-          <Link href={uid ? '/app' : '/login'}>
+          <Link href={id ? '/app' : '/login'}>
             <Button>Open in your browser</Button>
           </Link>
         </motion.span>

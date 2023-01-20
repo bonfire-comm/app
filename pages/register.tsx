@@ -14,7 +14,7 @@ import useUser from '@/lib/store/user';
 import { useEffect } from 'react';
 
 export default function Register() {
-  const uid = useUser((s) => s.uid);
+  const id = useUser((s) => s?.id);
 
   const router = useRouter();
   const [loading, setLoading] = useToggle();
@@ -67,12 +67,12 @@ export default function Register() {
   });
 
   useEffect(() => {
-    if (uid) {
+    if (id) {
       router.push('/app');
     }
-  }, [uid, router]);
+  }, [id, router]);
 
-  if (uid) return null;
+  if (id) return null;
 
   return (
     <>

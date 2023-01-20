@@ -12,13 +12,25 @@ declare global {
     errors?: any;
   }
 
+  type UserStatus = 'online' | 'idle' | 'dnd' | 'offline';
+
+  interface UserStatusData {
+    status: UserStatus;
+  }
+
   interface UserData {
     id: string;
+    name: string | null;
+    image?: string | null;
     discriminator: number;
-    banner: string | null;
-    about: string | null;
+    banner?: string | null;
+    about?: string | null;
     badges: string[];
     createdAt: Date;
+    activity: {
+      text: string;
+      emoji?: string;
+    } | null;
   }
 
   type GetServerSidePropsWithUser<
@@ -26,5 +38,5 @@ declare global {
     Q extends ParsedUrlQuery = ParsedUrlQuery
   > = (context: GetServerSidePropsContext<Q> & { user: UserRecord}) => Promise<GetServerSidePropsResult<P>>;
 
-  type UserOptions = UserData & { image?: string; name: string };
+  type UserOptions = UserData & UserStatusData;
 }

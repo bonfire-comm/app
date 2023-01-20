@@ -6,8 +6,11 @@ import { Button } from '@mantine/core';
 import Image from 'next/image';
 import { shallow } from 'zustand/shallow';
 
-export default function App() {
-  const [name, photo] = useUser((s) => [s.displayName, s.photoURL], shallow);
+export default function App({ user }: { user: UserData}) {
+  const [name, photo] = useUser((s) => [s?.name, s?.image], shallow);
+
+  console.log(user);
+
 
   return (
     <>

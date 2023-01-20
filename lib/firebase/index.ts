@@ -20,12 +20,15 @@ import {
   ref as storageRef,
   uploadBytes,
 } from 'firebase/storage';
+import { Database, connectDatabaseEmulator, getDatabase } from 'firebase/database';
+import { Firestore, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+
 import Router from 'next/router';
 import useUser from '../store/user';
 import Providers from './authProviders';
 import useInternal from '../store';
-// eslint-disable-next-line import/no-cycle
-import fetcher from '../api/fetcher';
+
+import UserManager from '../managers/user';
 
 export class Firebase {
   readonly firebaseConfig = {
@@ -44,15 +47,32 @@ export class Firebase {
 
   public storage: FirebaseStorage;
 
+  public rtdb: Database;
+
+  public firestore: Firestore;
+
+  public managers: {
+    user: UserManager;
+  };
+
   constructor() {
     this.app = initializeApp(this.firebaseConfig);
+
     this.auth = getAuth(this.app);
     this.storage = getStorage(this.app);
+    this.rtdb = getDatabase(this.app);
+    this.firestore = getFirestore(this.app);
 
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
       connectAuthEmulator(this.auth, 'http://localhost:9099');
       connectStorageEmulator(this.storage, 'localhost', 9199);
+      connectDatabaseEmulator(this.rtdb, 'localhost', 9000);
+      connectFirestoreEmulator(this.firestore, 'localhost', 8080);
     }
+
+    this.managers = {
+      user: new UserManager(this)
+    };
 
     this.registerListeners();
   }
@@ -62,20 +82,14 @@ export class Firebase {
   }
 
   async userChanged(user: User | null) {
-    let data = {};
-
     if (user) {
-      const res = await fetcher
-        .get<SemanticResponse<UserData>>('/users/me')
-        .catch(() => null);
-
-      data = {
-        ...user,
-        ...res,
-      } as User & UserData;
+      const u = await this.managers.user.fetch(user.uid);
+      if (!u) useUser.setState(await this.managers.user.createNewUser(), true);
+      else useUser.setState(u.copy(), true);
+    } else {
+      useUser.setState(null, true);
     }
 
-    useUser.setState(data, true);
     useInternal.setState({ userLoaded: true });
   }
 
@@ -113,11 +127,6 @@ export class Firebase {
     }
   }
 
-  async refetchUser() {
-    await this.auth.currentUser?.reload();
-    await this.userChanged(this.auth.currentUser);
-  }
-
   // Storage
   uploadFile(path: string, file: File | Blob | Uint8Array | ArrayBuffer) {
     const ref = storageRef(this.storage, path);
@@ -129,31 +138,6 @@ export class Firebase {
     const ref = storageRef(this.storage, path);
 
     return getDownloadURL(ref);
-  }
-
-  async uploadProfilePicture(
-    file: File | Blob | Uint8Array | ArrayBuffer,
-    updateProfile = true
-  ) {
-    const filename = `${this.auth.currentUser?.uid}-${Date.now()}.webp`;
-    await this.uploadFile(`pictures/${filename}`, file);
-
-    const url = `${
-      (await this.getFileUrl(`pictures/${filename}`)).split('?')[0]
-    }?alt=media`;
-
-    if (updateProfile) {
-      await fetcher('/users/me', {
-        method: 'POST',
-        data: {
-          image: url,
-        },
-      });
-
-      await this.refetchUser();
-    }
-
-    return url;
   }
 }
 

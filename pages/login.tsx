@@ -14,8 +14,7 @@ import { useEffect } from 'react';
 import { z } from 'zod';
 
 export default function Login() {
-  const uid = useUser((s) => s.uid);
-
+  const id = useUser((s) => s?.id);
   const router = useRouter();
   const [loading, setLoading] = useToggle();
   const delay = useInternal((state) => state.initialDelay);
@@ -60,13 +59,13 @@ export default function Login() {
   });
 
   useEffect(() => {
-    if (uid) {
+    if (id) {
       router.push('/app');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid]);
+  }, [id]);
 
-  if (uid) return null;
+  if (id) return null;
 
   return (
     <>

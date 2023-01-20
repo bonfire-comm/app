@@ -18,3 +18,20 @@ try {
 }
 
 export default admin;
+
+export const getUserServer = async (id: string): Promise<UserOptions | undefined> => {
+  const main = (await admin.firestore().doc(id).get()).data() as UserData | undefined;
+  if (!main) return;
+
+  const status = (await admin.database().ref(`statuses/${id}`).get()).val() as UserStatus | undefined ?? 'offline';
+  const authUser = await admin.auth().getUser(id);
+
+  return {
+    ...main,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    createdAt: (main.createdAt as any).toDate(),
+    name: authUser.displayName as string,
+    image: authUser.photoURL,
+    status
+  };
+};

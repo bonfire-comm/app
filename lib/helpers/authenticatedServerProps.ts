@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+import admin from '../firebase/admin';
 import getUserFromToken from './getUserFromToken';
 
 const authenticatedServerProps = (handler?: GetServerSidePropsWithUser) => {
@@ -23,9 +25,23 @@ const authenticatedServerProps = (handler?: GetServerSidePropsWithUser) => {
       };
     }
 
-    ctx.user = user;
 
-    if (!user.displayName && ctx.resolvedUrl !== '/onboarding') {
+    const profile = (await admin.firestore()
+      .collection('users')
+      .doc(user.uid)
+      .get()).data() as UserData | undefined;
+
+    if (!profile) {
+      return {
+        notFound: true
+      };
+    }
+
+    profile.createdAt = (profile.createdAt as unknown as Timestamp).toDate();
+
+    ctx.user = profile;
+
+    if (!profile?.name && ctx.resolvedUrl !== '/onboarding') {
       return {
         redirect: {
           permanent: true,
@@ -36,7 +52,9 @@ const authenticatedServerProps = (handler?: GetServerSidePropsWithUser) => {
 
     if (!handler) {
       return {
-        props: {}
+        props: {
+          user: JSON.parse(JSON.stringify(profile))
+        }
       };
     }
 
