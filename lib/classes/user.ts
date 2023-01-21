@@ -18,7 +18,7 @@ export default class User extends BaseStruct implements UserOptions {
 
   activity: { text: string; emoji?: string | undefined } | null;
 
-  image?: string | null;
+  image: string;
 
   name: string | null;
 
@@ -95,7 +95,7 @@ export default class User extends BaseStruct implements UserOptions {
     return this;
   }
 
-  setImage(image: string | null) {
+  setImage(image: string) {
     this.image = image;
 
     this.manager.cache.events.emit('changed', this.id, this);

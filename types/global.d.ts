@@ -32,6 +32,12 @@ declare global {
     } | null;
   }
 
+  interface UserBuddies {
+    added: string[];
+    pending: string[];
+    blocked: string[];
+  }
+
   type GetServerSidePropsWithUser<
     P extends { [key: string]: any } = { [key: string]: any },
     Q extends ParsedUrlQuery = ParsedUrlQuery

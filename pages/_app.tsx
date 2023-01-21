@@ -75,6 +75,12 @@ export default function App({ Component, pageProps, router }: AppProps) {
             classNames: {
               title: 'font-bold',
             }
+          },
+          Tabs: {
+            classNames: {
+              tab: 'px-2 font-semibold py-2 data-[active=true]:bg-cloudy-500 transition-color duration-200 ease-in-out',
+              tabsList: 'gap-3'
+            }
           }
         }
       }}

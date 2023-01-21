@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { get, onValue, ref, set } from 'firebase/database';
 import EventMap from '../classes/eventsMap';
 import User from '../classes/user';
@@ -28,6 +28,8 @@ export default class UserManager {
           if (!u) return;
 
           u.setStatus(status);
+
+          this.cache.events.emit('changed', id, u);
         });
     });
 
@@ -40,6 +42,7 @@ export default class UserManager {
 
             if (cached) {
               cached.set(data);
+              this.cache.events.emit('changed', data.id, cached);
             }
 
             break;
@@ -64,6 +67,112 @@ export default class UserManager {
 
       this.cache.events.off('changed', userChangeHandler);
     };
+  }
+
+  async addBuddy(id: string) {
+    if (!this.client.auth.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const docRef = doc(this.client.firestore, 'buddies', id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return false;
+
+    const data = snap.data() as UserBuddies;
+
+    if (data.blocked.includes(this.client.auth.currentUser.uid)) {
+      throw new Error('User blocked you');
+    }
+
+    await updateDoc(docRef, {
+      pending: arrayUnion(this.client.auth.currentUser.uid),
+    });
+
+    return true;
+  }
+
+  async acceptBuddy(id: string) {
+    if (!this.client.auth.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const { uid } = this.client.auth.currentUser;
+
+    const docRef = doc(this.client.firestore, 'buddies', uid);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return false;
+
+    const data = snap.data() as UserBuddies;
+
+    if (data.blocked.includes(id)) {
+      throw new Error('User is blocked');
+    }
+
+    if (!data.pending.includes(id)) {
+      throw new Error('User is not in pending requests');
+    }
+
+    await updateDoc(docRef, {
+      added: arrayUnion(id),
+      pending: arrayRemove(id)
+    });
+
+    return true;
+  }
+
+  /**
+   * Also removes pending request
+   * @param id User id
+   */
+  async removeBuddy(id: string) {
+    if (!this.client.auth.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const { uid } = this.client.auth.currentUser;
+
+    const docRef = doc(this.client.firestore, 'buddies', uid);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return false;
+
+    const data = snap.data() as UserBuddies;
+
+    if (data.blocked.includes(id)) {
+      return true;
+    }
+
+    await updateDoc(docRef, {
+      added: arrayRemove(id),
+      pending: arrayRemove(id)
+    });
+
+    return true;
+  }
+
+  async blockBuddy(id: string) {
+    if (!this.client.auth.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const { uid } = this.client.auth.currentUser;
+
+    const docRef = doc(this.client.firestore, 'buddies', uid);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return false;
+
+    const data = snap.data() as UserBuddies;
+
+    if (data.blocked.includes(id)) {
+      return true;
+    }
+
+    await updateDoc(docRef, {
+      added: arrayRemove(id),
+      pending: arrayRemove(id),
+      blocked: arrayUnion(id)
+    });
+
+    return true;
   }
 
   async fetch(id: string, force = false) {
