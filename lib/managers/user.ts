@@ -4,6 +4,7 @@ import EventMap from '../classes/eventsMap';
 import User from '../classes/user';
 import type { Firebase } from '../firebase';
 import useUser from '../store/user';
+import generateAvatar from '../helpers/generateAvatar';
 
 export default class UserManager {
   readonly cache = new EventMap<string, User>();
@@ -18,7 +19,9 @@ export default class UserManager {
 
   protected listenToUpdates() {
     const unsubStatuses = onValue(ref(this.client.rtdb, 'statuses'), async (snapshot) => {
-      const data: Record<string, UserStatus> = snapshot.val();
+      const data: Record<string, UserStatus> | null = snapshot.val();
+      if (!data) return;
+
       Object.entries(data)
         .forEach(([id, status]) => {
           const u = this.cache.get(id);
@@ -106,14 +109,15 @@ export default class UserManager {
       throw new Error('No user logged in');
     }
 
+    const user = this.client.auth.currentUser;
     const docRef = doc(this.client.firestore, 'users', this.client.auth.currentUser.uid);
 
     if ((await getDoc(docRef)).exists()) return null;
 
     const data: UserData = {
       id: this.client.auth.currentUser.uid,
-      name: null,
-      image: null,
+      name: user.displayName,
+      image: user.photoURL ?? await generateAvatar(512),
       discriminator: Math.floor(Math.random() * 8999) + 1000,
       banner: null,
       about: null,
@@ -124,6 +128,14 @@ export default class UserManager {
 
     await setDoc(docRef, data);
     this.setStatus('offline');
+
+    const buddiesDocRef = doc(this.client.firestore, 'buddies', this.client.auth.currentUser.uid);
+
+    await setDoc(buddiesDocRef, {
+      added: [],
+      pending: [],
+      blocked: [],
+    } as UserBuddies);
 
     const instance = new User({ ...data, status: 'offline' }, this);
     this.client.managers.user.cache.set(data.id, instance);
@@ -141,6 +153,8 @@ export default class UserManager {
 
     if (data.image) {
       finalData.image = await this.uploadProfilePicture(data.image);
+    } else {
+      finalData.image = await generateAvatar(512, data.name);
     }
 
     await updateDoc(doc(this.client.firestore, 'users', uid), {

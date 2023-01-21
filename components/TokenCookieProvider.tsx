@@ -1,6 +1,4 @@
 import firebaseClient from '@/lib/firebase';
-// eslint-disable-next-line import/no-cycle
-import CookieSetterBuilder from '@/lib/managers/cookie';
 import { useInterval } from '@mantine/hooks';
 import { ReactNode, useEffect } from 'react';
 import { z } from 'zod';
@@ -27,27 +25,19 @@ export type CookieManagerRequestData = typeof cookieManagerValidator['_input'];
 export type CookieManagerSetOptions = typeof cookieSetOptionsValidator['_input'];
 
 export default function TokenCookieProvider({ children }: { children: ReactNode }) {
-  useEffect(() =>
-    firebaseClient.auth.onIdTokenChanged(async (user) => {
-      const builder = new CookieSetterBuilder();
+  const interval = useInterval(() => firebaseClient.auth.currentUser?.getIdToken(true), 30 * 60 * 1000);
 
-      if (!user) {
-        builder.remove('token:/');
-      } else {
-        const token = await user.getIdToken();
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        builder.set('token', token, {
-          httpOnly: true,
-          path: '/'
-        });
-      }
+  useEffect(() => {
+    interval.start();
 
-      await builder.commit();
-    })
-  , []);
+    const unsub = firebaseClient.auth.onIdTokenChanged((user) => firebaseClient.generateToken(user));
 
-  // Refresh token every 15 minutes
-  useInterval(() => firebaseClient.auth.currentUser?.getIdToken(true), 15 * 60 * 1000);
+    return () => {
+      unsub();
+      interval.stop();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return <>{children}</>;
 }

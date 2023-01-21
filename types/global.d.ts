@@ -1,4 +1,3 @@
-import { UserRecord } from 'firebase-admin/lib/auth/user-record';
 import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
 import { ParsedUrlQuery } from 'querystring';
 
@@ -21,7 +20,7 @@ declare global {
   interface UserData {
     id: string;
     name: string | null;
-    image?: string | null;
+    image: string;
     discriminator: number;
     banner?: string | null;
     about?: string | null;
@@ -36,7 +35,7 @@ declare global {
   type GetServerSidePropsWithUser<
     P extends { [key: string]: any } = { [key: string]: any },
     Q extends ParsedUrlQuery = ParsedUrlQuery
-  > = (context: GetServerSidePropsContext<Q> & { user: UserRecord}) => Promise<GetServerSidePropsResult<P>>;
+  > = (context: GetServerSidePropsContext<Q> & { user: UserData }) => Promise<GetServerSidePropsResult<P>>;
 
   type UserOptions = UserData & UserStatusData;
 }

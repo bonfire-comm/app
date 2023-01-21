@@ -22,7 +22,7 @@ interface Props extends Omit<ReactCropProps, 'onChange'> {
 }
 
 export default function ImagePicker({ src: initialSrc, enableCropping, onChange = noop, onCrop = noop, onPick = noop, ...props }: Props) {
-  const [isDirty, controlDirty] = useToggle();
+  const [isDirty, setDirty] = useToggle();
   const [src, setSrc] = useState<string | null | undefined>(null);
 
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function ImagePicker({ src: initialSrc, enableCropping, onChange 
     setCrop(undefined);
     setSelected(null);
     onPick(null);
-    controlDirty(true);
+    setDirty(true);
     setSrc(null);
   };
 
@@ -175,6 +175,8 @@ export default function ImagePicker({ src: initialSrc, enableCropping, onChange 
             onChange(files[0]);
             setSelected(files[0]);
             setCropped(false);
+            setDirty(true);
+            setSrc(null);
 
             if (!enableCropping) onPick(files[0]);
           }}

@@ -85,7 +85,6 @@ export default function App({ Component, pageProps, router }: AppProps) {
         <TokenCookieProvider>
           <AnimatePresence
             mode="wait"
-            presenceAffectsLayout
             onExitComplete={() => {
               if (useInternal.getState().initialDelay !== 0) {
                 useInternal.setState({ initialDelay: 0 });

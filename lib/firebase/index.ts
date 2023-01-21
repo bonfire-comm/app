@@ -20,7 +20,7 @@ import {
   ref as storageRef,
   uploadBytes,
 } from 'firebase/storage';
-import { Database, connectDatabaseEmulator, getDatabase } from 'firebase/database';
+import { Database, connectDatabaseEmulator, getDatabase, onDisconnect, onValue, ref as DBRef, set } from 'firebase/database';
 import { Firestore, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 
 import Router from 'next/router';
@@ -29,6 +29,7 @@ import Providers from './authProviders';
 import useInternal from '../store';
 
 import UserManager from '../managers/user';
+import CookieSetterBuilder from '../managers/cookie';
 
 export class Firebase {
   readonly firebaseConfig = {
@@ -55,6 +56,8 @@ export class Firebase {
     user: UserManager;
   };
 
+  private tokenIsGenerating = false;
+
   constructor() {
     this.app = initializeApp(this.firebaseConfig);
 
@@ -79,6 +82,17 @@ export class Firebase {
 
   registerListeners() {
     onAuthStateChanged(this.auth, (user) => this.userChanged(user));
+
+    onValue(DBRef(this.rtdb, '.info/connected'), async (snapshot) => {
+      if (snapshot.val() === false) return;
+
+      const uid = this.auth.currentUser?.uid;
+      if (!uid) return;
+
+      const userStatusRef = DBRef(this.rtdb, `statuses/${uid}`);
+      await onDisconnect(userStatusRef).set('offline');
+      await set(userStatusRef, 'online');
+    });
   }
 
   async userChanged(user: User | null) {
@@ -94,6 +108,32 @@ export class Firebase {
   }
 
   // Auth
+  async generateToken(user: User | null) {
+    if (this.tokenIsGenerating) return;
+
+    this.tokenIsGenerating = true;
+
+    const builder = new CookieSetterBuilder();
+
+    if (!user) {
+      builder.remove('token:/');
+    } else {
+      const token = await user.getIdToken();
+
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      builder.set('token', token, {
+        httpOnly: true,
+        path: '/'
+      });
+
+      useInternal.setState({ token });
+    }
+
+    await builder.commit();
+
+    this.tokenIsGenerating = false;
+  }
+
   signInWithEmailAndPassword(email: string, password: string) {
     return signInWithEmailAndPassword(this.auth, email, password);
   }
@@ -120,11 +160,12 @@ export class Firebase {
 
   async signOut(redirect = true) {
     useUser.setState({}, true);
-    await this.auth.signOut();
 
     if (redirect) {
-      Router.push('/login');
+      await Router.push('/login');
     }
+
+    await this.auth.signOut();
   }
 
   // Storage

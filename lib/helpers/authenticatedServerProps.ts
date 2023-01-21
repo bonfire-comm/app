@@ -16,6 +16,7 @@ const authenticatedServerProps = (handler?: GetServerSidePropsWithUser) => {
     }
 
     const user = await getUserFromToken(token).catch(() => null);
+
     if (!user) {
       return {
         redirect: {
