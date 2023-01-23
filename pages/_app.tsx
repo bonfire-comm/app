@@ -62,9 +62,6 @@ export default function App({ Component, pageProps, router }: AppProps) {
             }
           },
           Button: {
-            classNames: {
-              root: 'disabled:opacity-50 pointer-events-auto disabled:cursor-not-allowed rounded-xl font-extrabold text-lg h-auto py-4 text-cloudy-600 bg-light-blue-500 hover:bg-light-blue-600 transition-colors duration-200 ease-in-out'
-            },
             defaultProps: {
               loaderProps: {
                 color: 'blue'

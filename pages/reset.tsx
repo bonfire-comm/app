@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { showNotification } from '@mantine/notifications';
 import showErrorNotification from '@/lib/helpers/showErrorNotification';
 import Twemoji from '@/components/Twemoji';
+import bigButtonClass from '@/lib/helpers/bigButtonClass';
 
 export default function Reset() {
   const id = useUser((s) => s?.id);
@@ -160,7 +161,7 @@ export default function Reset() {
               <form onSubmit={send} className="flex flex-col justify-between flex-grow w-1/2">
                 <TextInput {...form.getInputProps('email')} label="EMAIL" className="mb-4" />
 
-                <Button type="submit" disabled={counter !== 0} loading={loading}>Send {counter > 0 ? `(${counter})` : ''}</Button>
+                <Button classNames={{ root: bigButtonClass() }} type="submit" disabled={counter !== 0} loading={loading}>Send {counter > 0 ? `(${counter})` : ''}</Button>
               </form>
             )}
 
@@ -171,7 +172,7 @@ export default function Reset() {
                   <TextInput {...resetForm.getInputProps('confirm')} label="CONFIRM PASSWORD" type="password" className="mb-3" />
                 </section>
 
-                <Button type="submit" loading={loading}>Submit</Button>
+                <Button classNames={{ root: bigButtonClass() }} type="submit" loading={loading}>Submit</Button>
               </form>
             )}
           </section>

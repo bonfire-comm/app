@@ -1,5 +1,11 @@
+import EventEmitter from 'eventemitter3';
 import type UserManager from '../managers/user';
 import BaseStruct from './base';
+
+export type UserEventTypes = {
+  // eslint-disable-next-line no-use-before-define
+  changed: (user: User) => void;
+};
 
 export default class User extends BaseStruct implements UserOptions {
   id: string;
@@ -14,7 +20,7 @@ export default class User extends BaseStruct implements UserOptions {
 
   createdAt: Date;
 
-  status: 'online' | 'idle' | 'dnd' | 'offline';
+  status: UserStatus;
 
   activity: { text: string; emoji?: string | undefined } | null;
 
@@ -23,6 +29,8 @@ export default class User extends BaseStruct implements UserOptions {
   name: string | null;
 
   readonly manager: UserManager;
+
+  readonly events = new EventEmitter<UserEventTypes>();
 
   constructor(data: UserOptions, manager: UserManager) {
     super();
@@ -46,11 +54,16 @@ export default class User extends BaseStruct implements UserOptions {
     this.manager.fetch(this.id, true);
   }
 
+  emitChanged() {
+    this.manager.cache.events.emit('changed', this.id, this);
+    this.events.emit('changed', this);
+  }
+
   // write all setters methods
   setId(id: string) {
     this.id = id;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -58,7 +71,7 @@ export default class User extends BaseStruct implements UserOptions {
   setDiscriminator(discriminator: number) {
     this.discriminator = discriminator;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -66,7 +79,7 @@ export default class User extends BaseStruct implements UserOptions {
   setBanner(banner: string | null) {
     this.banner = banner;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -74,7 +87,7 @@ export default class User extends BaseStruct implements UserOptions {
   setAbout(about: string | null) {
     this.about = about;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -82,7 +95,7 @@ export default class User extends BaseStruct implements UserOptions {
   setBadges(badges: string[]) {
     this.badges = badges;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -90,7 +103,7 @@ export default class User extends BaseStruct implements UserOptions {
   setCreatedAt(createdAt: Date | string | number) {
     this.createdAt = new Date(createdAt);
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -98,7 +111,7 @@ export default class User extends BaseStruct implements UserOptions {
   setImage(image: string) {
     this.image = image;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -106,15 +119,15 @@ export default class User extends BaseStruct implements UserOptions {
   setName(name: string | null) {
     this.name = name;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
 
-  setStatus(status: 'online' | 'idle' | 'dnd' | 'offline') {
+  setStatus(status: UserStatus) {
     this.status = status;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -122,7 +135,7 @@ export default class User extends BaseStruct implements UserOptions {
   setActivity(activity: { text: string; emoji?: string | undefined } | null) {
     this.activity = activity;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
 
     return this;
   }
@@ -138,7 +151,7 @@ export default class User extends BaseStruct implements UserOptions {
     this.name = data.name;
     this.activity = data.activity;
 
-    this.manager.cache.events.emit('changed', this.id, this);
+    this.emitChanged();
   }
 
   copy() {

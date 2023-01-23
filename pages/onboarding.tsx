@@ -10,6 +10,7 @@ import ImagePicker from '@/components/ImagePicker';
 import { useEffect } from 'react';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 import firebaseClient from '@/lib/firebase';
+import bigButtonClass from '@/lib/helpers/bigButtonClass';
 
 export default function Onboarding() {
   const photo = useUser((s) => s?.image);
@@ -90,7 +91,7 @@ export default function Onboarding() {
                 <TextInput {...form.getInputProps('name')} label="USERNAME" className="mb-4" />
               </section>
 
-              <Button type="submit" loading={loading}>Continue</Button>
+              <Button classNames={{ root: bigButtonClass() }} type="submit" loading={loading}>Continue</Button>
             </section>
           </form>
         </section>

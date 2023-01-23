@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/router';
 import useUser from '@/lib/store/user';
 import { useEffect } from 'react';
+import bigButtonClass from '@/lib/helpers/bigButtonClass';
 
 export default function Register() {
   const id = useUser((s) => s?.id);
@@ -97,22 +98,22 @@ export default function Register() {
                 <TextInput {...form.getInputProps('confirm')} label="CONFIRM PASSWORD" type="password" className="mb-3" />
               </section>
 
-              <Button type="submit" loading={loading}>Sign up</Button>
+              <Button classNames={{ root: bigButtonClass() }} type="submit" loading={loading}>Sign up</Button>
             </form>
 
             <section className="flex-grow w-1/2 flex flex-col">
               <h3 className="font-extrabold text-sm text-cloudy-300 mb-1">OR CONTINUE WITH</h3>
 
               <section className="flex flex-col gap-5 flex-grow">
-                <Button onClick={() => firebaseClient.signInWithPopup('google')} className="bg-[#2B9DFF] hover:bg-[#237fcf] text-light-blue-200 flex-grow">
+                <Button classNames={{ root: bigButtonClass(null, true) }} onClick={() => firebaseClient.signInWithPopup('google')} className="bg-[#2B9DFF] hover:bg-[#237fcf] text-light-blue-200 flex-grow">
                   <FontAwesomeIcon icon={faGoogle} size="xl" />
                 </Button>
 
-                <Button onClick={() => firebaseClient.signInWithPopup('microsoft')} className="bg-[#7FBA00] hover:bg-[#679700] text-light-blue-200 flex-grow">
+                <Button classNames={{ root: bigButtonClass(null, true) }} onClick={() => firebaseClient.signInWithPopup('microsoft')} className="bg-[#7FBA00] hover:bg-[#679700] text-light-blue-200 flex-grow">
                   <FontAwesomeIcon icon={faMicrosoft} size="xl" />
                 </Button>
 
-                <Button onClick={() => firebaseClient.signInWithPopup('github')} className="bg-[#0e0e0e] hover:bg-[#000000] text-light-blue-200 flex-grow">
+                <Button classNames={{ root: bigButtonClass(null, true) }} onClick={() => firebaseClient.signInWithPopup('github')} className="bg-[#0e0e0e] hover:bg-[#000000] text-light-blue-200 flex-grow">
                   <FontAwesomeIcon icon={faGithub} size="xl" />
                 </Button>
               </section>

@@ -1433,6 +1433,11 @@
     "@types/qs" "*"
     "@types/serve-static" "*"
 
+"@types/howler@^2.2.7":
+  version "2.2.7"
+  resolved "https://registry.yarnpkg.com/@types/howler/-/howler-2.2.7.tgz#5acfbed57f9e1d99b8dabe1b824729e1c1ea1fae"
+  integrity sha512-PEZldwZqJJw1PWRTpupyC7ajVTZA8aHd8nB/Y0n6zRZi5u8ktYDntsHj13ltEiBRqWwF06pASxBEvCTxniG8eA==
+
 "@types/json-schema@^7.0.7", "@types/json-schema@^7.0.9":
   version "7.0.11"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.11.tgz#d421b6c527a3037f7c84433fd2c4229e016863d3"
@@ -3207,6 +3212,11 @@ hoist-non-react-statics@^3.3.1:
   dependencies:
     react-is "^16.7.0"
 
+howler@^2.2.3:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/howler/-/howler-2.2.3.tgz#a2eff9b08b586798e7a2ee17a602a90df28715da"
+  integrity sha512-QM0FFkw0LRX1PR8pNzJVAY25JhIWvbKMBFM4gqk+QdV+kPXOhleWGCB6AiAF/goGjIHK2e/nIElplvjQwhr0jg==
+
 html-dom-parser@1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/html-dom-parser/-/html-dom-parser-1.2.0.tgz#8f689b835982ffbf245eda99730e92b8462c111e"
@@ -4398,6 +4408,11 @@ react-easy-emoji@^1.8.1:
   integrity sha512-wAf2x+cjwtOlLfXnjc0J3k5B2PDZdoxd1BjtfKr5tq2AL7t2ygvByJQWgFOyN28xg3qe8EKBM6pKxGP+qrGWuQ==
   dependencies:
     string-replace-to-array "^2.1.0"
+
+react-idle-timer@^5.4.2:
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/react-idle-timer/-/react-idle-timer-5.4.2.tgz#69e20044cf2ecc421aef99cd82298c526d8acf37"
+  integrity sha512-ofCS/qpFjm6ZguEyePvtf9YMDnLj7zZfeLXRWGRpsC6Ga47H4dm7EvoUW8MsozGEGy8zCvPK0Sk6YuAnwLEzRQ==
 
 react-image-crop@^10.0.9:
   version "10.0.9"

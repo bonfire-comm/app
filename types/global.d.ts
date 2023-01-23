@@ -1,3 +1,4 @@
+import { Howl } from 'howler';
 import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
 import { ParsedUrlQuery } from 'querystring';
 
@@ -11,7 +12,7 @@ declare global {
     errors?: any;
   }
 
-  type UserStatus = 'online' | 'idle' | 'dnd' | 'offline';
+  type UserStatus = 'online' | 'idle' | 'offline';
 
   interface UserStatusData {
     status: UserStatus;
@@ -36,6 +37,14 @@ declare global {
     added: string[];
     pending: string[];
     blocked: string[];
+  }
+
+  interface PlaylistData {
+    name: string;
+    file: string | string[];
+    artist: string;
+    link: string;
+    player?: Howl;
   }
 
   type GetServerSidePropsWithUser<

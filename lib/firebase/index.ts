@@ -67,7 +67,9 @@ export class Firebase {
     this.firestore = getFirestore(this.app);
 
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-      connectAuthEmulator(this.auth, 'http://localhost:9099');
+      connectAuthEmulator(this.auth, 'http://localhost:9099', {
+        disableWarnings: true
+      });
       connectStorageEmulator(this.storage, 'localhost', 9199);
       connectDatabaseEmulator(this.rtdb, 'localhost', 9000);
       connectFirestoreEmulator(this.firestore, 'localhost', 8080);
@@ -86,13 +88,17 @@ export class Firebase {
     onValue(DBRef(this.rtdb, '.info/connected'), async (snapshot) => {
       if (snapshot.val() === false) return;
 
-      const uid = this.auth.currentUser?.uid;
-      if (!uid) return;
-
-      const userStatusRef = DBRef(this.rtdb, `statuses/${uid}`);
-      await onDisconnect(userStatusRef).set('offline');
-      await set(userStatusRef, 'online');
+      this.setStatuses();
     });
+  }
+
+  async setStatuses() {
+    const uid = this.auth.currentUser?.uid;
+    if (!uid) return;
+
+    const userStatusRef = DBRef(this.rtdb, `statuses/${uid}`);
+    await onDisconnect(userStatusRef).set('offline');
+    await set(userStatusRef, 'online');
   }
 
   async userChanged(user: User | null) {
@@ -100,6 +106,8 @@ export class Firebase {
       const u = await this.managers.user.fetch(user.uid);
       if (!u) useUser.setState(await this.managers.user.createNewUser(), true);
       else useUser.setState(u.copy(), true);
+
+      this.setStatuses();
     } else {
       useUser.setState(null, true);
     }

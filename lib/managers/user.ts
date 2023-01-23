@@ -1,4 +1,4 @@
-import { arrayRemove, arrayUnion, collection, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, limit, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { get, onValue, ref, set } from 'firebase/database';
 import EventMap from '../classes/eventsMap';
 import User from '../classes/user';
@@ -69,19 +69,33 @@ export default class UserManager {
     };
   }
 
-  async addBuddy(id: string) {
+  async addBuddy(name: string, discriminator: number) {
     if (!this.client.auth.currentUser) {
-      throw new Error('No user logged in');
+      throw new Error('not-logged-in');
     }
 
-    const docRef = doc(this.client.firestore, 'buddies', id);
+    const profile = await getDocs(query(collection(this.client.firestore, 'users'), where('name', '==', name), where('discriminator', '==', discriminator), limit(1)));
+    if (profile.empty) {
+      throw new Error('not-found');
+    }
+
+    const profileData = profile.docs[0].data() as UserData;
+    const docRef = doc(this.client.firestore, 'buddies', profileData.id);
     const snap = await getDoc(docRef);
     if (!snap.exists()) return false;
 
     const data = snap.data() as UserBuddies;
 
     if (data.blocked.includes(this.client.auth.currentUser.uid)) {
-      throw new Error('User blocked you');
+      throw new Error('blocked');
+    }
+
+    if (data.added.includes(this.client.auth.currentUser.uid)) {
+      throw new Error('already-added');
+    }
+
+    if (data.pending.includes(this.client.auth.currentUser.uid)) {
+      throw new Error('already-pending');
     }
 
     await updateDoc(docRef, {
@@ -93,29 +107,37 @@ export default class UserManager {
 
   async acceptBuddy(id: string) {
     if (!this.client.auth.currentUser) {
-      throw new Error('No user logged in');
+      throw new Error('not-logged-in');
     }
 
     const { uid } = this.client.auth.currentUser;
 
     const docRef = doc(this.client.firestore, 'buddies', uid);
     const snap = await getDoc(docRef);
-    if (!snap.exists()) return false;
+    if (!snap.exists()) {
+      throw new Error('internal-error');
+    };
 
     const data = snap.data() as UserBuddies;
 
     if (data.blocked.includes(id)) {
-      throw new Error('User is blocked');
+      throw new Error('blocked');
     }
 
     if (!data.pending.includes(id)) {
-      throw new Error('User is not in pending requests');
+      throw new Error('not-pending');
     }
 
-    await updateDoc(docRef, {
-      added: arrayUnion(id),
-      pending: arrayRemove(id)
-    });
+    await Promise.all([
+      updateDoc(docRef, {
+        added: arrayUnion(id),
+        pending: arrayRemove(id)
+      }),
+      // Other user
+      updateDoc(doc(this.client.firestore, 'buddies', id), {
+        added: arrayUnion(uid)
+      })
+    ]);
 
     return true;
   }
@@ -126,39 +148,50 @@ export default class UserManager {
    */
   async removeBuddy(id: string) {
     if (!this.client.auth.currentUser) {
-      throw new Error('No user logged in');
+      throw new Error('not-logged-in');
     }
 
     const { uid } = this.client.auth.currentUser;
 
     const docRef = doc(this.client.firestore, 'buddies', uid);
     const snap = await getDoc(docRef);
-    if (!snap.exists()) return false;
+    if (!snap.exists()) {
+      throw new Error('internal-error');
+    };
 
     const data = snap.data() as UserBuddies;
 
     if (data.blocked.includes(id)) {
-      return true;
+      throw new Error('blocked');
     }
 
-    await updateDoc(docRef, {
-      added: arrayRemove(id),
-      pending: arrayRemove(id)
-    });
+    await Promise.all([
+      updateDoc(docRef, {
+        added: arrayRemove(id),
+        pending: arrayRemove(id)
+      }),
+      // Other user
+      updateDoc(doc(this.client.firestore, 'buddies', id), {
+        added: arrayRemove(uid),
+        pending: arrayRemove(uid),
+      }),
+    ]);
 
     return true;
   }
 
   async blockBuddy(id: string) {
     if (!this.client.auth.currentUser) {
-      throw new Error('No user logged in');
+      throw new Error('not-logged-in');
     }
 
     const { uid } = this.client.auth.currentUser;
 
     const docRef = doc(this.client.firestore, 'buddies', uid);
     const snap = await getDoc(docRef);
-    if (!snap.exists()) return false;
+    if (!snap.exists()) {
+      throw new Error('internal-error');
+    }
 
     const data = snap.data() as UserBuddies;
 
@@ -166,10 +199,44 @@ export default class UserManager {
       return true;
     }
 
+    await Promise.all([
+      updateDoc(docRef, {
+        added: arrayRemove(id),
+        pending: arrayRemove(id),
+        blocked: arrayUnion(id)
+      }),
+      // Other user
+      updateDoc(doc(this.client.firestore, 'buddies', id), {
+        added: arrayRemove(uid),
+        pending: arrayRemove(uid),
+      }),
+    ]);
+
+
+    return true;
+  }
+
+  async unblockBuddy(id: string) {
+    if (!this.client.auth.currentUser) {
+      throw new Error('not-logged-in');
+    }
+
+    const { uid } = this.client.auth.currentUser;
+
+    const docRef = doc(this.client.firestore, 'buddies', uid);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      throw new Error('internal-error');
+    }
+
+    const data = snap.data() as UserBuddies;
+
+    if (!data.blocked.includes(id)) {
+      return true;
+    }
+
     await updateDoc(docRef, {
-      added: arrayRemove(id),
-      pending: arrayRemove(id),
-      blocked: arrayUnion(id)
+      blocked: arrayRemove(id)
     });
 
     return true;
@@ -207,7 +274,7 @@ export default class UserManager {
    */
   async setStatus(status: UserStatus) {
     if (!this.client.auth.currentUser) {
-      throw new Error('No user logged in');
+      throw new Error('not-logged-in');
     }
 
     await set(ref(this.client.rtdb, `statuses/${this.client.auth.currentUser.uid}`), status);
@@ -215,7 +282,7 @@ export default class UserManager {
 
   async createNewUser() {
     if (!this.client.auth.currentUser) {
-      throw new Error('No user logged in');
+      throw new Error('not-logged-in');
     }
 
     const user = this.client.auth.currentUser;

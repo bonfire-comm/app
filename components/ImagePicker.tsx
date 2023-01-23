@@ -10,6 +10,7 @@ import { createRef, useEffect, useMemo, useState } from 'react';
 import centerAspectCrop from '@/lib/helpers/centerAspectRatio';
 import { Button } from '@mantine/core';
 import { useClickOutside, useToggle } from '@mantine/hooks';
+import bigButtonClass from '@/lib/helpers/bigButtonClass';
 
 const RESIZE_SIZE = 512;
 
@@ -248,7 +249,7 @@ export default function ImagePicker({ src: initialSrc, enableCropping, onChange 
             />
           </span>
 
-          {crop?.width && <Button className="absolute bottom-3 right-3 px-2 py-1 text-base" onClick={processCrop}>Crop</Button>}
+          {crop?.width && <Button className="absolute bottom-3 right-3 px-2 py-1 text-base" classNames={{ root: bigButtonClass() }} onClick={processCrop}>Crop</Button>}
         </section>
 
         <ReactCrop

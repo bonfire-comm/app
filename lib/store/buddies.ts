@@ -20,12 +20,13 @@ useUser.subscribe((state, prev) => {
 
   unsub = onSnapshot(doc(firebaseClient.firestore, 'buddies', state.id), async (snap) => {
     const data = snap.data() as UserBuddies | undefined;
-
-    useBuddies.setState(new Buddies(data ?? {
+    const buddies = new Buddies(data ?? {
       added: [],
       pending: [],
       blocked: [],
-    }), true);
+    });
+
+    useBuddies.setState(buddies, true);
   });
 });
 
