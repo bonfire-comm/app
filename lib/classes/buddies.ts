@@ -18,10 +18,6 @@ export default class Buddies extends BaseStruct implements UserBuddies {
     this.fetchUsers();
   }
 
-  addBuddy(id: string) {
-    return firebaseClient.managers.user.addBuddy(id);
-  }
-
   async fetchUsers() {
     const users = [...this.added, ...this.pending, ...this.blocked];
 

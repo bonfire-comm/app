@@ -1,11 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 import Layout from '@/components/Layout';
 import Meta from '@/components/Meta';
+import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 import formatDuration from '@/lib/helpers/formatDuration';
 import useMusic, { playlistData } from '@/lib/store/music';
-import { faPause, faPauseCircle, faPlay, faPlayCircle } from '@fortawesome/free-solid-svg-icons';
+import { faBackwardStep, faForwardStep, faPause, faPauseCircle, faPlay, faPlayCircle, faRepeat, faShuffle, faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Slider } from '@mantine/core';
+import { Slider, Tooltip } from '@mantine/core';
+import { useEffect } from 'react';
 import { shallow } from 'zustand/shallow';
 
 interface ListProps {
@@ -15,11 +17,11 @@ interface ListProps {
 }
 
 const SongList = ({ data, index, currentlyPlaying }: ListProps) => {
-  const [play, pause, paused, step, skip] = useMusic((state) => [state.play, state.pause, state.paused, state.step, state.skip], shallow);
+  const [play, pause, paused, step, next] = useMusic((state) => [state.play, state.pause, state.paused, state.step, state.next], shallow);
 
   return (
     <section
-      onClick={() => !currentlyPlaying || paused ? play.call({ step, skip }, index) : pause.call({ step, skip })}
+      onClick={() => !currentlyPlaying || paused ? play.call({ step, next, play }, index) : pause.call({ step, next, play })}
       className={['group cursor-pointer flex items-center gap-4 px-6 py-4 w-full transition-colors duration-100 ease-in-out', currentlyPlaying ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-600 hover:bg-opacity-70'].join(' ')}
     >
       <section className="relative">
@@ -44,9 +46,78 @@ const SongList = ({ data, index, currentlyPlaying }: ListProps) => {
 const Controller = () => {
   const music = useMusic();
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const shuffle = localStorage.getItem('shuffle');
+      const loop = localStorage.getItem('loop');
+      const volume = localStorage.getItem('volume');
+
+      try {
+        useMusic.setState({
+          shuffle: shuffle ? JSON.parse(shuffle) : false,
+          loop: loop ? JSON.parse(loop) : false,
+          volume: volume ? JSON.parse(volume) : 0.5
+        });
+
+        if (shuffle && JSON.parse(shuffle)) {
+          useMusic.getState().generateShuffledIndexMap();
+        }
+        // eslint-disable-next-line no-empty
+      } catch {}
+    }
+  }, []);
+
   return (
-    <section className="bg-cloudy-700 bg-opacity-50 flex flex-col items-center gap-1 justify-center py-2 px-8">
-      <section>
+    <section className="relative bg-cloudy-700 bg-opacity-50 flex flex-col items-center gap-1 justify-center py-2 px-8">
+      <section className="absolute right-8 flex gap-4">
+        <Tooltip label="Shuffle" position="top" color="blue" withArrow arrowSize={6} offset={10}>
+          <FontAwesomeIcon
+            icon={faShuffle}
+            size="lg"
+            onClick={() => music.setShuffle(!music.shuffle)}
+            className={['cursor-pointer transition-colors duration-200 ease-in-out', music.shuffle ? 'text-cloudy-50' : 'text-cloudy-300'].join(' ')}
+          />
+        </Tooltip>
+
+        <Tooltip label="Loop" position="top" color="blue" withArrow arrowSize={6} offset={10}>
+          <FontAwesomeIcon
+            icon={faRepeat}
+            size="lg"
+            onClick={() => music.setLoop(!music.loop)}
+            className={['cursor-pointer transition-colors duration-200 ease-in-out', music.loop ? 'text-cloudy-50' : 'text-cloudy-300'].join(' ')}
+          />
+        </Tooltip>
+
+        <section className="group flex gap-3 items-center justify-center">
+          <FontAwesomeIcon
+            icon={faVolumeHigh}
+            size="lg"
+          />
+
+          <Slider
+            className="w-24 h-full flex items-center"
+            classNames={{
+              track: 'h-[6px]',
+              thumb: 'hidden',
+            }}
+            max={1000}
+            min={0}
+            value={music.volume * 1000}
+            color="blue"
+            label={null}
+            onChange={(v) => music.setVolume(v / 1000)}
+          />
+        </section>
+      </section>
+
+      <section className="flex items-center gap-4">
+        <FontAwesomeIcon
+          icon={faBackwardStep}
+          size="xl"
+          className="cursor-pointer"
+          onClick={() => music.prev()}
+        />
+
         <FontAwesomeIcon
           icon={music.paused || music.currentIndex === null ? faPlayCircle : faPauseCircle}
           className="cursor-pointer"
@@ -60,6 +131,13 @@ const Controller = () => {
             if (music.paused) music.play();
             else music.pause();
           }}
+        />
+
+        <FontAwesomeIcon
+          icon={faForwardStep}
+          size="xl"
+          className="cursor-pointer"
+          onClick={() => music.next()}
         />
       </section>
 
@@ -114,3 +192,5 @@ export default function Music() {
     </>
   );
 }
+
+export const getServerSideProps = authenticatedServerProps();

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Howl }from 'howler';
 import { combine } from 'zustand/middleware';
-import { shuffle } from 'lodash-es';
+import fisherYatesShuffle from '../helpers/fisherYatesShuffle';
 
 export const playlistData: PlaylistData[] = [
   {
@@ -48,10 +48,6 @@ export const playlistData: PlaylistData[] = [
   },
 ];
 
-const temp = shuffle(Object.keys(playlistData)
-  .map((key) => parseInt(key, 10)));
-const indexMap = new Map<number, number>(Object.keys(playlistData).map((v) => [parseInt(v, 10), temp.shift() as number]));
-
 const useMusic = create(
   combine({
     currentIndex: null as number | null,
@@ -61,13 +57,28 @@ const useMusic = create(
     shuffle: false as boolean,
     loop: false as boolean,
     ended: false as boolean,
-    duration: 0
+    duration: 0,
+    indexMap: null as Map<number, number> | null
   }, (set, get) => ({
     setShuffle: (s: boolean) => {
-      set({ shuffle: s });
+      const data = {
+        shuffle: s,
+        indexMap: null as Map<number, number> | null
+      };
+
+      if (s) {
+        data.indexMap = new Map<number, number>(Object.entries(fisherYatesShuffle(Object.keys(playlistData).map((key) => parseInt(key, 10)))).map(([key, value]) => [parseInt(key, 10), value]));
+      }
+
+      set(data);
     },
     setLoop: (loop: boolean) => {
       set({ loop });
+    },
+    generateShuffledIndexMap() {
+      set({
+        indexMap: new Map<number, number>(Object.entries(fisherYatesShuffle(Object.keys(playlistData).map((key) => parseInt(key, 10)))).map(([key, value]) => [parseInt(key, 10), value]))
+      });
     },
     getCurrentData() {
       const { currentIndex } = get();
@@ -77,9 +88,10 @@ const useMusic = create(
     },
     setVolume: (volume: number) => {
       const { currentIndex } = get();
-      if (currentIndex === null) return;
+      if (currentIndex !== null) {
+        playlistData[currentIndex]?.player?.volume(volume);
+      }
 
-      playlistData[currentIndex]?.player?.volume(volume);
       set({ volume });
     },
     play(index?: number) {
@@ -112,14 +124,15 @@ const useMusic = create(
         player.once('end', () => {
           set({ ended: true });
 
-          if (get().loop) return this.play(index);
+          const currentData = get();
 
-          if (get().shuffle) {
-            const nextIndex = indexMap.get(index) as number;
+          if (currentData.loop) return this.play(index);
+          if (currentData.shuffle) {
+            const nextIndex = currentData.indexMap?.get(index) as number;
             return this.play(nextIndex);
           }
 
-          this.skip();
+          this.next();
         });
         player.once('load', () => set({ duration: player.duration() }));
       }
@@ -141,14 +154,41 @@ const useMusic = create(
       playlistData[currentIndex]?.player?.pause();
       set({ paused: true });
     },
-    skip() {
-      const { currentIndex } = get();
+    next() {
+      const { currentIndex, shuffle } = get();
       if (currentIndex === null) return;
+
+      if (shuffle) {
+        const nextIndex = get().indexMap?.get(currentIndex) as number;
+        this.play(nextIndex);
+        set({ currentIndex: nextIndex });
+        return;
+      }
 
       const nextIndex = playlistData[currentIndex + 1] ? currentIndex + 1 : 0;
 
       this.play(nextIndex);
       set({ currentIndex: nextIndex });
+    },
+    prev() {
+      const { currentIndex, shuffle } = get();
+      if (currentIndex === null) return;
+
+      if (shuffle) {
+        const indexMap = get()?.indexMap;
+        if (!indexMap) return;
+
+        const reversed = new Map<number, number>([...indexMap.entries()].map(([key, value]) => [value, key]));
+        const prevIndex = reversed.get(currentIndex) as number;
+        this.play(prevIndex);
+        set({ currentIndex: prevIndex });
+        return;
+      }
+
+      const prevIndex = playlistData[currentIndex - 1] ? currentIndex - 1 : playlistData.length - 1;
+
+      this.play(prevIndex);
+      set({ currentIndex: prevIndex });
     },
     step() {
       const { currentIndex, ended } = get();
@@ -167,5 +207,11 @@ const useMusic = create(
     }
   }))
 );
+
+useMusic.subscribe((state) => {
+  localStorage.setItem('shuffle', JSON.stringify(state.shuffle));
+  localStorage.setItem('loop', JSON.stringify(state.loop));
+  localStorage.setItem('volume', JSON.stringify(state.volume));
+});
 
 export default useMusic;
