@@ -45,6 +45,7 @@ declare global {
     artist: string;
     link: string;
     player?: Howl;
+    image: string;
   }
 
   type GetServerSidePropsWithUser<
