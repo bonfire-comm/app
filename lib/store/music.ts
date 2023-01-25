@@ -134,6 +134,7 @@ const useMusic = create(
 
           this.next();
         });
+
         player.once('load', () => set({ duration: player.duration() }));
       }
 
@@ -141,7 +142,7 @@ const useMusic = create(
         player.seek(playTime);
         set({ paused: false });
       } else {
-        set({ currentIndex: index, paused: false, playTime: 0, ended: false });
+        set({ currentIndex: index, paused: false, playTime: 0, ended: false, duration: player.duration() });
       }
 
       player.play();
