@@ -13,6 +13,7 @@ import useUser from '@/lib/store/user';
 import { useEffect } from 'react';
 import { z } from 'zod';
 import bigButtonClass from '@/lib/helpers/bigButtonClass';
+import { fetchBuddies } from '@/lib/store/buddies';
 
 export default function Login() {
   const id = useUser((s) => s?.id);
@@ -37,6 +38,7 @@ export default function Login() {
       await firebaseClient.signInWithEmailAndPassword(values.email, values.password);
       await firebaseClient.generateToken(firebaseClient.auth.currentUser);
       await router.push('/app');
+      await fetchBuddies();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.code === 'auth/user-not-found') {

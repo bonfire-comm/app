@@ -8,6 +8,7 @@ import { useClipboard, useForceUpdate } from '@mantine/hooks';
 import { shallow } from 'zustand/shallow';
 import useBuddies from '@/lib/store/buddies';
 import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import AvatarWithStatus from './AvatarWithStatus';
 import Twemoji from './Twemoji';
 
@@ -16,12 +17,14 @@ interface Props {
   showAccept?: boolean;
   enableMenu?: boolean;
   barebone?: boolean;
+  avatarSize?: number;
 }
 
-export default function UserList({ user, showAccept, enableMenu = true, barebone }: Props) {
+export default function UserList({ user, showAccept, enableMenu = true, barebone, avatarSize }: Props) {
   const [added, blocked] = useBuddies((state) => [state.added, state.blocked], shallow);
   const clipboard = useClipboard({ timeout: 500 });
   const forceRender = useForceUpdate();
+  const router = useRouter();
 
   useEffect(() => {
     const handler = () => forceRender();
@@ -80,7 +83,7 @@ export default function UserList({ user, showAccept, enableMenu = true, barebone
     return (
       <section className="flex">
         <section className="flex gap-4 items-center">
-          <AvatarWithStatus image={user.image} status={user.status} />
+          <AvatarWithStatus imageSize={avatarSize} image={user.image} status={user.status} />
 
           <section>
             <h3 className="font-extrabold text-lg flex gap-1 items-center">
@@ -97,7 +100,7 @@ export default function UserList({ user, showAccept, enableMenu = true, barebone
   return (
     <section className="p-4 bg-cloudy-500 rounded-lg flex bg-opacity-80 justify-between items-center gap-4">
       <section className="flex gap-4 items-center">
-        <AvatarWithStatus image={user.image} status={user.status} />
+        <AvatarWithStatus imageSize={avatarSize} image={user.image} status={user.status} />
 
         <section>
           <h3 className="font-extrabold text-lg flex gap-1 items-center">
@@ -145,7 +148,15 @@ export default function UserList({ user, showAccept, enableMenu = true, barebone
                   <Menu.Item onClick={() => firebaseClient.managers.user.unblockBuddy(user.id).catch(() => null)}>Unblock buddy</Menu.Item>
                 )
                 : (
-                  <Menu.Item className="text-red-400" onClick={() => firebaseClient.managers.user.blockBuddy(user.id).catch(() => null)}>Block buddy</Menu.Item>
+                  <>
+                    <Menu.Item className="text-red-400" onClick={() => firebaseClient.managers.user.blockBuddy(user.id).catch(() => null)}>Block buddy</Menu.Item>
+                    <Menu.Item onClick={async () => {
+                      const id = await firebaseClient.managers.channels.createDM(user.id).catch(() => null);
+                      if (!id) return;
+
+                      router.push(`/app/channels/${id}`);
+                    }}>Start DM</Menu.Item>
+                  </>
                 )}
 
               <Menu.Divider />

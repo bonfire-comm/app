@@ -20,7 +20,7 @@ export default function NavLink({
   const router = useRouter();
 
   return (
-    <Link href={href} className={[className, router.pathname !== href && inactiveClassName, router.pathname === href && activeClassName].filter(Boolean).join(' ')}>
+    <Link href={href} className={[className, router.asPath !== href && inactiveClassName, router.asPath === href && activeClassName].filter(Boolean).join(' ')}>
       {children}
     </Link>
   );

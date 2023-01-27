@@ -30,6 +30,7 @@ import useInternal from '../store';
 
 import UserManager from '../managers/user';
 import CookieSetterBuilder from '../managers/cookie';
+import ChannelManager from '../managers/channels';
 
 export class Firebase {
   readonly firebaseConfig = {
@@ -54,6 +55,7 @@ export class Firebase {
 
   public managers: {
     user: UserManager;
+    channels: ChannelManager;
   };
 
   private tokenIsGenerating = false;
@@ -76,7 +78,8 @@ export class Firebase {
     }
 
     this.managers = {
-      user: new UserManager(this)
+      user: new UserManager(this),
+      channels: new ChannelManager(this)
     };
 
     this.registerListeners();

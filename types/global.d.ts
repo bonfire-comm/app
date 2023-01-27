@@ -48,6 +48,47 @@ declare global {
     image: string;
   }
 
+  interface ChannelVoiceData {
+    id?: string;
+    started: boolean;
+    participants: [];
+  }
+
+  interface ChannelData {
+    id: string;
+    name: string;
+    image?: string;
+    isDM: boolean;
+    owner?: string;
+    description?: string;
+    participants: Record<string, boolean>;
+    pins: string[];
+    createdAt: Date;
+    bans: Record<string, boolean>;
+
+    voice: ChannelVoiceData;
+  }
+
+  interface ChannelMessageAttachmentData {
+    name: string;
+    url: string;
+    type: string;
+  }
+
+  interface ChannelMessageData {
+    id: string;
+    author: string;
+    content: string;
+    createdAt: Date;
+    editedAt?: Date;
+    attachments?: ChannelMessageAttachmentData[];
+  }
+
+  type ChannelEventTypes = {
+    message: (message: ChannelMessageData) => void;
+    [k: `message-${string}`]: (message: ChannelMessageData) => void;
+  };
+
   type GetServerSidePropsWithUser<
     P extends { [key: string]: any } = { [key: string]: any },
     Q extends ParsedUrlQuery = ParsedUrlQuery
