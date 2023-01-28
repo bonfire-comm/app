@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "channels": {
+      "$channel": {
+        "messages": {
+          "$message": {
+            ".write": "auth != null",
+            ".indexOn": ["createdAt"]
+          }
+        }
+      }
+    },
+    ".read": true,
+    ".write": true
+  }
+}

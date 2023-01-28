@@ -18,9 +18,10 @@ interface Props {
   enableMenu?: boolean;
   barebone?: boolean;
   avatarSize?: number;
+  indicatorSize?: number;
 }
 
-export default function UserList({ user, showAccept, enableMenu = true, barebone, avatarSize }: Props) {
+export default function UserList({ user, showAccept, enableMenu = true, barebone, avatarSize, indicatorSize }: Props) {
   const [added, blocked] = useBuddies((state) => [state.added, state.blocked], shallow);
   const clipboard = useClipboard({ timeout: 500 });
   const forceRender = useForceUpdate();
@@ -83,7 +84,7 @@ export default function UserList({ user, showAccept, enableMenu = true, barebone
     return (
       <section className="flex">
         <section className="flex gap-4 items-center">
-          <AvatarWithStatus imageSize={avatarSize} image={user.image} status={user.status} />
+          <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={user.image} status={user.status} />
 
           <section>
             <h3 className="font-extrabold text-lg flex gap-1 items-center">
@@ -100,7 +101,7 @@ export default function UserList({ user, showAccept, enableMenu = true, barebone
   return (
     <section className="p-4 bg-cloudy-500 rounded-lg flex bg-opacity-80 justify-between items-center gap-4">
       <section className="flex gap-4 items-center">
-        <AvatarWithStatus imageSize={avatarSize} image={user.image} status={user.status} />
+        <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={user.image} status={user.status} />
 
         <section>
           <h3 className="font-extrabold text-lg flex gap-1 items-center">

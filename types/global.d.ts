@@ -1,3 +1,4 @@
+import Message from '@/lib/classes/message';
 import { Howl } from 'howler';
 import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
 import { ParsedUrlQuery } from 'querystring';
@@ -72,6 +73,7 @@ declare global {
   interface ChannelMessageAttachmentData {
     name: string;
     url: string;
+    id: string;
     type: string;
   }
 
@@ -80,13 +82,13 @@ declare global {
     author: string;
     content: string;
     createdAt: Date;
-    editedAt?: Date;
-    attachments?: ChannelMessageAttachmentData[];
+    editedAt?: Date | null;
+    attachments?: ChannelMessageAttachmentData[] | null;
   }
 
   type ChannelEventTypes = {
-    message: (message: ChannelMessageData) => void;
-    [k: `message-${string}`]: (message: ChannelMessageData) => void;
+    message: (message: Message) => void;
+    [k: `message-${string}`]: (message: Message) => void;
   };
 
   type GetServerSidePropsWithUser<

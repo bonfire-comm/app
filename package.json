@@ -32,6 +32,7 @@
     "@next/font": "13.1.1",
     "@tabler/icons": "1.119.0",
     "@tiptap/core": "^2.0.0-beta.209",
+    "@tiptap/extension-code-block-lowlight": "^2.0.0-beta.209",
     "@tiptap/extension-link": "^2.0.0-beta.209",
     "@tiptap/extension-placeholder": "^2.0.0-beta.209",
     "@tiptap/react": "^2.0.0-beta.209",
@@ -47,8 +48,12 @@
     "firebase": "^9.15.0",
     "firebase-admin": "^11.4.1",
     "framer-motion": "^8.4.3",
+    "hast-util-to-html": "^8.0.4",
+    "highlight.js": "^11.7.0",
     "howler": "^2.2.3",
     "lodash-es": "^4.17.21",
+    "lowlight": "^2.8.0",
+    "luxon": "^3.2.1",
     "next": "13.1.1",
     "next-connect": "^0.13.0",
     "nookies": "^2.5.2",
@@ -72,6 +77,7 @@
   "devDependencies": {
     "@edqe/eslint-config": "^1.0.1",
     "@types/lodash-es": "^4.17.6",
+    "@types/luxon": "^3.2.0",
     "autoprefixer": "^10.4.13",
     "postcss": "^8.4.21",
     "tailwindcss": "^3.2.4"

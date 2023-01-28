@@ -2,7 +2,9 @@ import firebaseClient from '@/lib/firebase';
 import { ReactNode } from 'react';
 import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
-import { Divider } from '@mantine/core';
+import { Button, Divider } from '@mantine/core';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import Logo from './Logo';
 import Twemoji from './Twemoji';
 import NavLink from './NavLink';
@@ -20,8 +22,18 @@ const ControlBar = () => {
   if (!user) return null;
 
   return (
-    <section className="px-4 flex items-center bg-cloudy-800 bg-opacity-40">
+    <section className="px-4 justify-between gap-4 flex items-center bg-cloudy-800 bg-opacity-40">
       <UserList user={user} barebone />
+
+      <Button
+        color="red"
+        variant="subtle"
+        onClick={() => firebaseClient.auth.signOut()}
+      >
+        <FontAwesomeIcon
+          icon={faRightFromBracket}
+        />
+      </Button>
     </section>
   );
 };

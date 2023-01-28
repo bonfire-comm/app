@@ -6,6 +6,54 @@ body {
   @apply bg-vantactGray-500 text-white overflow-hidden font-mulish;
 }
 
+code {
+  @apply bg-cloudy-800 px-1 rounded;
+}
+
+.user_message {
+  @apply flex flex-col gap-2;
+}
+
+.user_message pre {
+  @apply rounded-lg w-full;
+}
+
+.user_message ol {
+  @apply list-decimal;
+}
+
+.user_message ul {
+  @apply list-disc;
+}
+
+.user_message ol, .user_message ul {
+  @apply ml-4;
+}
+
+.user_message h1 {
+  @apply text-2xl font-bold;
+}
+
+.user_message h2 {
+  @apply text-xl font-bold;
+}
+
+.user_message h3 {
+  @apply text-lg font-bold;
+}
+
+.user_message h4 {
+  @apply text-base font-bold;
+}
+
+.user_message h5 {
+  @apply text-sm font-bold;
+}
+
+.user_message h6 {
+  @apply text-xs font-bold;
+}
+
 @layer {
   .custom_scrollbar {
     @apply scrollbar-thin scrollbar-thumb-cloudy-500 hover:scrollbar-thumb-cloudy-400 scrollbar-track-rounded-full scrollbar-thumb-rounded-full scrollbar-track-cloudy-600;

@@ -1,5 +1,5 @@
 import { ref, remove, set } from 'firebase/database';
-import { pick } from 'lodash-es';
+import { omitBy, pick } from 'lodash-es';
 import BaseStruct from './base';
 import type Channel from './channel';
 import firebaseClient from '../firebase';
@@ -13,9 +13,9 @@ export default class Message extends BaseStruct implements ChannelMessageData {
 
   createdAt: Date;
 
-  editedAt?: Date | undefined;
+  editedAt?: Date | null = null;
 
-  attachments?: ChannelMessageAttachmentData[];
+  attachments?: ChannelMessageAttachmentData[] | null = null;
 
   readonly channel: Channel;
 
@@ -54,10 +54,27 @@ export default class Message extends BaseStruct implements ChannelMessageData {
     }
 
     const dataRef = ref(firebaseClient.rtdb, `channels/${this.channel.id}/messages/${this.id}`);
-    await set(dataRef, pick<ChannelMessageData>(this, ['author', 'content', 'createdAt', 'editedAt', 'attachments']));
+    await set(dataRef, {
+      author: this.author,
+      content: this.content,
+      attachments: this.attachments ?? null,
+      createdAt: this.createdAt.getTime(),
+      editedAt: this.editedAt?.getTime() ?? null,
+    });
+  }
+
+  get pinned() {
+    return this.channel.pins.includes(this.id);
   }
 
   copy() {
     return new Message(this, this.channel);
+  }
+
+  toJSON() {
+    return omitBy(
+      pick<ChannelMessageData>(this, ['id', 'author', 'content', 'createdAt', 'editedAt', 'attachments']),
+      (value) => value === undefined || value === null || (Array.isArray(value) && value.length === 0)
+    );
   }
 }

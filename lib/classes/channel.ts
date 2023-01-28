@@ -1,11 +1,12 @@
 import EventEmitter from 'eventemitter3';
-import { noop, pick } from 'lodash-es';
-import { onValue, orderByChild, push, query, ref, set, update } from 'firebase/database';
+import { isEqual, noop, pick } from 'lodash-es';
+import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, serverTimestamp, set, update } from 'firebase/database';
 import { doc, updateDoc } from 'firebase/firestore';
 import BaseStruct from './base';
 import firebaseClient from '../firebase';
 import type ChannelManager from '../managers/channels';
 import Message from './message';
+import generateId from '../helpers/generateId';
 
 export default class Channel extends BaseStruct implements ChannelData {
   id: string;
@@ -59,27 +60,65 @@ export default class Channel extends BaseStruct implements ChannelData {
   }
 
   listenMessages() {
-    const messagesQuery = query(ref(firebaseClient.rtdb, `channels/${this.id}/messages`), orderByChild('createdAt'));
+    const messagesQuery = query(
+      ref(firebaseClient.rtdb, `channels/${this.id}/messages`),
+      orderByChild('createdAt'),
+      limitToLast(50)
+    );
 
-    this.messagesUnsubscriber = onValue(messagesQuery, (snap) => {
+    const unsubAdded = onChildAdded(messagesQuery, (snap) => {
       const data = snap.val() as ChannelMessageData;
+
+      // Hot reload dupes
+      if (this.messages.some((m) => m.id === data.id)) return;
+
+      // eslint-disable-next-line no-param-reassign
+      if (data.createdAt) data.createdAt = new Date(data.createdAt);
+      if (data.editedAt) data.editedAt = new Date(data.editedAt);
+
+      // Add
+      const messageObj = new Message(data, this);
+      this.messages.push(messageObj);
+      this.events.emit('message', messageObj);
+    });
+
+    const unsubChanged = onChildChanged(messagesQuery, (snap) => {
+      const data = snap.val() as ChannelMessageData;
+
+      // eslint-disable-next-line no-param-reassign
+      if (data.createdAt) data.createdAt = new Date(data.createdAt);
+      if (data.editedAt) data.editedAt = new Date(data.editedAt);
 
       // Edit
       if (this.messages.some((m) => m.id === data.id)) {
-        const message = this.messages.find((m) => m.id === data.id);
+        const cached = this.messages.find((m) => m.id === data.id);
 
-        if (message) {
-          message.set(data);
-          this.events.emit('message', message);
+        if (cached && !isEqual(cached.toJSON(), data)) {
+          cached.set(data);
+          this.events.emit(`message-${data.id}`, cached);
         }
-
-        return;
       }
-
-      console.log(data);
     });
 
-    // onRemo
+    const unsubRemoved = onChildRemoved(messagesQuery, (snap) => {
+      const data = snap.val() as ChannelMessageData;
+
+      // Delete
+      if (this.messages.some((m) => m.id === data.id)) {
+        const cached = this.messages.find((m) => m.id === data.id);
+
+        if (cached) {
+          this.messages.splice(this.messages.indexOf(cached), 1);
+          this.events.emit('message', cached);
+        }
+      }
+    });
+
+    this.messagesUnsubscriber = () => {
+      unsubAdded();
+      unsubChanged();
+      unsubRemoved();
+    };
   }
 
   stopListenMessages() {
@@ -107,34 +146,45 @@ export default class Channel extends BaseStruct implements ChannelData {
     const id = push(ref(firebaseClient.rtdb, `channels/${this.id}/messages`)).key;
     if (!id || !firebaseClient.auth.currentUser) return;
 
-    const data: ChannelMessageData = {
+    const data = {
       id,
       content,
       author: firebaseClient.auth.currentUser.uid,
-      createdAt: new Date(),
-      attachments: []
+      createdAt: serverTimestamp(),
+      attachments: [] as ChannelMessageAttachmentData[]
     };
 
     if (attachments && attachments.length > 0) {
-      data.attachments = await Promise.all(attachments.map(async (attach) => {
-        const path = `attachments/${this.id}/${id}/${attach.name}`;
+      const uploaded: ChannelMessageAttachmentData[] = [];
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const attach of [...attachments].sort((a, b) => a.size - b.size)) {
+        const attachId = generateId();
+        const path = `attachments/${this.id}/${id}/${attachId}-${attach.name}`;
+        // eslint-disable-next-line no-await-in-loop
         await firebaseClient.uploadFile(path, attach);
 
+        // eslint-disable-next-line no-await-in-loop
         const url = await firebaseClient.getFileUrl(path);
 
-        return {
+        uploaded.push({
           name: attach.name,
           url,
           type: attach.type,
-          createdAt: new Date()
-        };
-      }));
+          id: attachId
+        });
+      }
+
+      data.attachments = uploaded;
     }
 
     const dataRef = ref(firebaseClient.rtdb, `channels/${this.id}/messages/${id}`);
     await set(dataRef, data);
 
-    const message = new Message(data, this);
+    const serverData = (await get(dataRef)).val();
+    serverData.createdAt = new Date(serverData.createdAt);
+
+    const message = new Message(data as ChannelMessageData, this);
 
     return message;
   }
@@ -166,6 +216,35 @@ export default class Channel extends BaseStruct implements ChannelData {
     if (this.bans[id] === undefined) return;
 
     delete this.bans[id];
+
+    return this;
+  }
+
+  async fetchMessage(id: string, force = false) {
+    if (!force) {
+      const cached = this.messages.find((m) => m.id === id);
+      if (cached) return cached;
+    }
+
+    const snap = await get(ref(firebaseClient.rtdb, `channels/${this.id}/messages/${id}`));
+
+    if (!snap.exists()) return null;
+
+    const data = snap.val() as ChannelMessageData;
+    data.createdAt = new Date(data.createdAt);
+
+    return new Message(data, this);
+  }
+
+  pinMessage(id: string) {
+    this.pins.push(id);
+
+    return this;
+  }
+
+  unpinMessage(id: string) {
+    const index = this.pins.indexOf(id);
+    if (index !== -1) this.pins.splice(index, 1);
 
     return this;
   }

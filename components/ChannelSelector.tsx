@@ -8,6 +8,7 @@ import useUser from '@/lib/store/user';
 import getInitials from '@/lib/helpers/getInitials';
 import { Avatar } from '@mantine/core';
 import NavLink from './NavLink';
+import UserList from './UserList';
 
 interface PreviewProps {
   channel: Channel;
@@ -28,12 +29,7 @@ const DMPreview = ({ channel }: PreviewProps) => {
 
   return (
     <section className="flex gap-3 items-center">
-      <img className="w-8 rounded-full" src={user.value.image} alt={user.value.name as string} />
-      <p className="font-bold text-lg gap-1 flex items-center">
-        {user.value.name}
-
-        <span className="font-medium opacity-75 text-base">#{user.value.discriminator}</span>
-      </p>
+      <UserList user={user.value} barebone avatarSize={38} />
     </section>
   );
 };
