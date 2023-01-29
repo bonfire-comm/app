@@ -11,18 +11,18 @@ export default createApiHandler()
 
     const { set, remove } = parsed.data;
 
-    if (set) {
-      Object.entries(set).forEach(([key, opt]) => {
-        nookies.set({ res }, key, opt.value, opt.options);
-      });
-    }
-
     if (remove) {
       remove.forEach((key) => {
         const [value, path] = key.split(':');
         nookies.destroy({ res }, value as string, {
           path
         });
+      });
+    }
+
+    if (set) {
+      Object.entries(set).forEach(([key, opt]) => {
+        nookies.set({ res }, key, opt.value, opt.options);
       });
     }
 

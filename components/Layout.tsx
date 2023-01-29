@@ -5,6 +5,7 @@ import useUser from '@/lib/store/user';
 import { Button, Divider } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import { useRouter } from 'next/router';
 import Logo from './Logo';
 import Twemoji from './Twemoji';
 import NavLink from './NavLink';
@@ -18,6 +19,7 @@ interface Props {
 
 const ControlBar = () => {
   const user = useUser();
+  const router = useRouter();
 
   if (!user) return null;
 
@@ -28,7 +30,12 @@ const ControlBar = () => {
       <Button
         color="red"
         variant="subtle"
-        onClick={() => firebaseClient.auth.signOut()}
+        onClick={() => {
+          Promise.all([
+            firebaseClient.auth.signOut(),
+            router.push('/login')
+          ]);
+        }}
       >
         <FontAwesomeIcon
           icon={faRightFromBracket}

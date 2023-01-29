@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import nookies from 'nookies';
 import admin from '../firebase/admin';
 import getUserFromToken from './getUserFromToken';
 
@@ -18,6 +19,10 @@ const authenticatedServerProps = (handler?: GetServerSidePropsWithUser) => {
     const user = await getUserFromToken(token).catch(() => null);
 
     if (!user) {
+      nookies.destroy({ res: ctx.res }, 'token', {
+        path: '/'
+      });
+
       return {
         redirect: {
           permanent: true,
@@ -25,7 +30,6 @@ const authenticatedServerProps = (handler?: GetServerSidePropsWithUser) => {
         }
       };
     }
-
 
     const profile = (await admin.firestore()
       .collection('users')
@@ -39,7 +43,6 @@ const authenticatedServerProps = (handler?: GetServerSidePropsWithUser) => {
     }
 
     profile.createdAt = (profile.createdAt as unknown as Timestamp).toDate();
-
     ctx.user = profile;
 
     if (!profile?.name && ctx.resolvedUrl !== '/onboarding') {

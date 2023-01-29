@@ -136,7 +136,8 @@ export default class UserManager {
       // Other user
       updateDoc(doc(this.client.firestore, 'buddies', id), {
         added: arrayUnion(uid)
-      })
+      }),
+      this.client.managers.channels.createDM(id)
     ]);
 
     return true;

@@ -94,7 +94,10 @@ export default class ChannelManager {
     const participantsRef = ref(firebaseClient.rtdb, `channels/${id}/participants`);
 
     await Promise.all([
-      setDoc(docRef, data),
+      setDoc(docRef, {
+        id,
+        ...data
+      }),
       set(participantsRef, data.participants)
     ]);
 

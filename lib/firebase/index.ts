@@ -1,4 +1,4 @@
-import { FirebaseApp, initializeApp } from 'firebase/app';
+import { FirebaseApp, FirebaseOptions, initializeApp } from 'firebase/app';
 import {
   Auth,
   User,
@@ -31,9 +31,10 @@ import useInternal from '../store';
 import UserManager from '../managers/user';
 import CookieSetterBuilder from '../managers/cookie';
 import ChannelManager from '../managers/channels';
+import { fetchBuddies } from '../store/buddies';
 
 export class Firebase {
-  readonly firebaseConfig = {
+  readonly firebaseConfig: FirebaseOptions = {
     apiKey: process.env.NEXT_PUBLIC_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
     projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
@@ -41,6 +42,7 @@ export class Firebase {
     messagingSenderId: process.env.NEXT_PUBLIC_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_APP_ID,
     measurementId: process.env.NEXT_PUBLIC_MEASUREMENT_ID,
+    databaseURL: process.env.NEXT_PUBLIC_DATABASE_URL
   };
 
   public app: FirebaseApp;
@@ -68,7 +70,7 @@ export class Firebase {
     this.rtdb = getDatabase(this.app);
     this.firestore = getFirestore(this.app);
 
-    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    if (process.env.NODE_ENV === 'development' && process.env.USE_EMULATOR && typeof window !== 'undefined') {
       connectAuthEmulator(this.auth, 'http://localhost:9099', {
         disableWarnings: true
       });
@@ -110,7 +112,11 @@ export class Firebase {
       if (!u) useUser.setState(await this.managers.user.createNewUser(), true);
       else useUser.setState(u.copy(), true);
 
-      this.setStatuses();
+      await Promise.all([
+        this.setStatuses(),
+        fetchBuddies()
+      ]);
+
     } else {
       useUser.setState(null, true);
     }
@@ -119,16 +125,17 @@ export class Firebase {
   }
 
   // Auth
-  async generateToken(user: User | null) {
+  async generateToken() {
     if (this.tokenIsGenerating) return;
 
     this.tokenIsGenerating = true;
 
+    const user = this.auth.currentUser;
     const builder = new CookieSetterBuilder();
 
-    if (!user) {
-      builder.remove('token:/');
-    } else {
+    builder.remove('token:/');
+
+    if (user) {
       const token = await user.getIdToken();
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
