@@ -1,5 +1,6 @@
 import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, limit, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { get, onValue, ref, set } from 'firebase/database';
+import { noop } from 'lodash-es';
 import EventMap from '../classes/eventsMap';
 import User from '../classes/user';
 import type { Firebase } from '../firebase';
@@ -18,38 +19,48 @@ export default class UserManager {
   }
 
   protected listenToUpdates() {
-    const unsubStatuses = onValue(ref(this.client.rtdb, 'statuses'), async (snapshot) => {
-      const data: Record<string, UserStatus> | null = snapshot.val();
-      if (!data) return;
+    let unsubStatuses = noop;
+    let unsubUser = noop;
 
-      Object.entries(data)
-        .forEach(([id, status]) => {
-          const u = this.cache.get(id);
-          if (!u) return;
+    const unsubUserState = useUser.subscribe((user, prev) => {
+      if (!user || user.id === prev?.id) return;
 
-          u.setStatus(status);
+      unsubStatuses();
+      unsubUser();
 
-          this.cache.events.emit('changed', id, u);
-        });
-    });
+      unsubStatuses = onValue(ref(this.client.rtdb, 'statuses'), async (snapshot) => {
+        const data: Record<string, UserStatus> | null = snapshot.val();
+        if (!data) return;
 
-    const unsubUser = onSnapshot(collection(this.client.firestore, 'users'), (snapshot) => {
-      snapshot.docChanges().forEach(async (changes) => {
-        switch (changes.type) {
-          case 'modified': {
-            const data = changes.doc.data() as UserData;
-            const cached = this.cache.get(data.id);
+        Object.entries(data)
+          .forEach(([id, status]) => {
+            const u = this.cache.get(id);
+            if (!u) return;
 
-            if (cached) {
-              cached.set(data);
-              this.cache.events.emit('changed', data.id, cached);
+            u.setStatus(status);
+
+            this.cache.events.emit('changed', id, u);
+          });
+      });
+
+      unsubUser = onSnapshot(collection(this.client.firestore, 'users'), (snapshot) => {
+        snapshot.docChanges().forEach(async (changes) => {
+          switch (changes.type) {
+            case 'modified': {
+              const data = changes.doc.data() as UserData;
+              const cached = this.cache.get(data.id);
+
+              if (cached) {
+                cached.set(data);
+                this.cache.events.emit('changed', data.id, cached);
+              }
+
+              break;
             }
 
-            break;
+            default: break;
           }
-
-          default: break;
-        }
+        });
       });
     });
 
@@ -64,6 +75,7 @@ export default class UserManager {
     return () => {
       unsubStatuses();
       unsubUser();
+      unsubUserState();
 
       this.cache.events.off('changed', userChangeHandler);
     };

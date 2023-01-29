@@ -24,6 +24,7 @@ import rustLanguageSyntax from 'highlight.js/lib/languages/rust';
 import dockerLanguageSyntax from 'highlight.js/lib/languages/dockerfile';
 import goLanguageSyntax from 'highlight.js/lib/languages/go';
 import xmlLanguageSyntax from 'highlight.js/lib/languages/xml';
+import EnterHandler from '@/lib/tiptap/enterHandler';
 
 lowlight.registerLanguage('typescript', tsLanguageSyntax);
 lowlight.registerLanguage('typescriptreact', tsLanguageSyntax);
@@ -74,6 +75,7 @@ export default function TextEditor({
         lowlight,
         defaultLanguage: 'plaintext',
       }),
+      EnterHandler
     ],
     content,
     onUpdate({ editor: e }) {

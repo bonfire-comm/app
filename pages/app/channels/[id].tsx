@@ -133,7 +133,6 @@ export default function ChannelPage() {
       });
     } else {
       await channel.postMessage(content, attachments);
-
     }
 
     editorRef.current?.commands.clearContent();
@@ -150,6 +149,15 @@ export default function ChannelPage() {
 
     ev.preventDefault();
     onAttachment([file]);
+  });
+
+  useWindowEvent('keyup', ({ key }) => {
+    if (key === 'Escape' && useEditMessage.getState().editing) {
+      useEditMessage.setState({
+        editing: false,
+        message: null
+      });
+    }
   });
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { ref, remove, set } from 'firebase/database';
+import { ref, remove, update } from 'firebase/database';
 import { omitBy, pick } from 'lodash-es';
 import BaseStruct from './base';
 import type Channel from './channel';
@@ -54,7 +54,7 @@ export default class Message extends BaseStruct implements ChannelMessageData {
     }
 
     const dataRef = ref(firebaseClient.rtdb, `channels/${this.channel.id}/messages/${this.id}`);
-    await set(dataRef, {
+    await update(dataRef, {
       author: this.author,
       content: this.content,
       attachments: this.attachments ?? null,
