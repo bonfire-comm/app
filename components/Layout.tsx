@@ -6,6 +6,7 @@ import { Button, Divider } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
+import CookieSetterBuilder from '@/lib/managers/cookie';
 import Logo from './Logo';
 import Twemoji from './Twemoji';
 import NavLink from './NavLink';
@@ -30,7 +31,9 @@ const ControlBar = () => {
       <Button
         color="red"
         variant="subtle"
-        onClick={() => {
+        onClick={async () => {
+          await new CookieSetterBuilder().remove('token:/').commit();
+
           Promise.all([
             firebaseClient.auth.signOut(),
             router.push('/login')

@@ -27,9 +27,7 @@ import xmlLanguageSyntax from 'highlight.js/lib/languages/xml';
 import EnterHandler from '@/lib/tiptap/enterHandler';
 
 lowlight.registerLanguage('typescript', tsLanguageSyntax);
-lowlight.registerLanguage('typescriptreact', tsLanguageSyntax);
 lowlight.registerLanguage('javascript', jsLanguageSyntax);
-lowlight.registerLanguage('javascriptreact', jsLanguageSyntax);
 lowlight.registerLanguage('python', pyLanguageSyntax);
 lowlight.registerLanguage('bash', shLanguageSyntax);
 lowlight.registerLanguage('cpp', cppLanguageSyntax);
@@ -42,6 +40,21 @@ lowlight.registerLanguage('arduino', arduinoLanguageSyntax);
 lowlight.registerLanguage('rust', rustLanguageSyntax);
 lowlight.registerLanguage('docker', dockerLanguageSyntax);
 lowlight.registerLanguage('go', goLanguageSyntax);
+
+lowlight.registerAlias({
+  'cpp': ['c++'],
+  'csharp': ['c#', 'cs'],
+  'docker': ['dockerfile'],
+  'go': ['golang'],
+  'html': ['xml'],
+  'json': ['json5'],
+  'rust': ['rs'],
+  'typescript': ['ts', 'tsx', 'typescriptreact'],
+  'javascript': ['js', 'jsx', 'javascriptreact'],
+  'python': ['py'],
+  'bash': ['sh'],
+  'arduino': ['ino'],
+});
 
 interface Props {
   content: string;
@@ -74,6 +87,7 @@ export default function TextEditor({
       CodeBlockLowlight.configure({
         lowlight,
         defaultLanguage: 'plaintext',
+        exitOnArrowDown: true
       }),
       EnterHandler
     ],
@@ -114,11 +128,13 @@ export default function TextEditor({
   return (
     <RichTextEditor
       editor={editor}
+      withCodeHighlightStyles={false}
+      withTypographyStyles={false}
       onKeyDown={onKeyDown}
       className={className}
       classNames={{
         root: 'rounded-lg',
-        content: 'bg-cloudy-700 pr-12 max-h-[400px] custom_scrollbar overflow-y-auto overflow-x-hidden rounded-lg',
+        content: 'editor bg-cloudy-700 pr-12 max-h-[400px] custom_scrollbar overflow-y-auto overflow-x-hidden rounded-lg',
       }}
     >
       {editor && (

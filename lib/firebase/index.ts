@@ -70,7 +70,7 @@ export class Firebase {
     this.rtdb = getDatabase(this.app);
     this.firestore = getFirestore(this.app);
 
-    if (process.env.NODE_ENV === 'development' && process.env.USE_EMULATOR && typeof window !== 'undefined') {
+    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_EMULATOR && typeof window !== 'undefined') {
       connectAuthEmulator(this.auth, 'http://localhost:9099', {
         disableWarnings: true
       });

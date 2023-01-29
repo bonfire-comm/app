@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:emulator": "USE_EMULATOR=1 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 next dev",
+    "dev:emulator": "NEXT_PUBLIC_USE_EMULATOR=1 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

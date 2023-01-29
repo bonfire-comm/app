@@ -10,48 +10,61 @@ code {
   @apply bg-cloudy-800 px-1 rounded;
 }
 
+.editor pre code {
+  @apply w-full block p-4;
+}
+
 .user_message {
   @apply flex flex-col gap-2;
 }
 
-.user_message pre {
+.user_message pre, .editor pre {
   @apply rounded-lg w-full;
 }
 
-.user_message ol {
+.user_message ol, .editor ol {
   @apply list-decimal;
 }
 
-.user_message ul {
+.user_message ul, .editor ul {
   @apply list-disc;
 }
 
-.user_message ol, .user_message ul {
+.user_message ol, .user_message ul,
+.editor ol, .editor ul {
   @apply ml-4;
 }
 
-.user_message h1 {
+.user_message h1, .editor h1 {
   @apply text-2xl font-bold;
 }
 
-.user_message h2 {
+.user_message h2, .editor h2 {
   @apply text-xl font-bold;
 }
 
-.user_message h3 {
+.user_message h3, .editor h3 {
   @apply text-lg font-bold;
 }
 
-.user_message h4 {
+.user_message h4, .editor h4 {
   @apply text-base font-bold;
 }
 
-.user_message h5 {
+.user_message h5, .editor h5 {
   @apply text-sm font-bold;
 }
 
-.user_message h6 {
+.user_message h6, .editor h6 {
   @apply text-xs font-bold;
+}
+
+.user_message blockquote, .editor blockquote {
+  @apply relative pl-3 before:absolute before:top-0 before:left-0 before:bottom-0 before:w-1 before:h-full before:block before:bg-cloudy-400 before:rounded-full;
+}
+
+.user_message hr, .editor hr {
+  @apply block w-full h-[2px] rounded-full border-none my-2 bg-cloudy-400;
 }
 
 @layer {

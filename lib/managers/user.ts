@@ -86,6 +86,15 @@ export default class UserManager {
       throw new Error('not-logged-in');
     }
 
+    const currentUser = useUser.getState();
+    if (!currentUser) {
+      throw new Error('not-logged-in');
+    }
+
+    if (name === currentUser.name && discriminator === currentUser.discriminator) {
+      throw new Error('self');
+    }
+
     const profile = await getDocs(query(collection(this.client.firestore, 'users'), where('name', '==', name), where('discriminator', '==', discriminator), limit(1)));
     if (profile.empty) {
       throw new Error('not-found');
