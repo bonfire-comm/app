@@ -62,7 +62,6 @@ const InnerHeader = ({ channel }: { channel?: Channel | null }) => (
   </>
 );
 
-
 export default function ChannelPage() {
   const router = useRouter();
   const editorRef = useRef<Editor | null>(null);
@@ -141,8 +140,8 @@ export default function ChannelPage() {
     setSending(false);
   };
 
-  useWindowEvent('paste', (ev: ClipboardEvent) => {
-    const files = ev.clipboardData?.files;
+  useWindowEvent('paste', (ev) => {
+    const files = (ev as unknown as ClipboardEvent).clipboardData?.files;
     if (!files) return;
 
     const [file] = files;
