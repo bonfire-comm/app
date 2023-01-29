@@ -4,9 +4,9 @@
       "$channel": {
         "messages": {
           "$message": {
-            ".write": "auth != null",
-            ".indexOn": ["createdAt"]
-          }
+            ".write": "auth != null"
+          },
+          ".indexOn": "createdAt"
         }
       }
     },

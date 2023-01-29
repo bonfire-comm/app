@@ -89,7 +89,7 @@ export default function TextEditor({
   const onKeyDown: KeyboardEventHandler<HTMLDivElement> = async (ev) => {
     if (!editor) return;
 
-    const { key, shiftKey } = ev;
+    const { key, ctrlKey } = ev;
 
     // @ts-expect-error - I don't know why this is not working
     const cursor = editor.state.selection?.$cursor?.parent;
@@ -100,9 +100,8 @@ export default function TextEditor({
       return editor.chain().insertContent('  ').focus('end').run();
     }
 
-    if (key === 'Enter' && shiftKey) {
+    if (key === 'Enter' && ctrlKey) {
       ev.preventDefault();
-      editor.commands.undo();
 
       await onSend(editor.getHTML());
 

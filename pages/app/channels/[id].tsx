@@ -133,6 +133,7 @@ export default function ChannelPage() {
       });
     } else {
       await channel.postMessage(content, attachments);
+
     }
 
     editorRef.current?.commands.clearContent();
@@ -208,7 +209,7 @@ export default function ChannelPage() {
             />
           </section>
 
-          <p className="select-none text-xs opacity-60">Use <code>shift + enter</code> to send</p>
+          <p className="select-none text-xs opacity-60">Use <code>ctrl + enter</code> to send</p>
         </section>
       </section>
     </Layout>
