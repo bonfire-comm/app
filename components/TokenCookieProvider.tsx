@@ -30,7 +30,7 @@ export default function TokenCookieProvider({ children }: { children: ReactNode 
   useEffect(() => {
     interval.start();
 
-    const unsub = firebaseClient.auth.onIdTokenChanged((user) => firebaseClient.generateToken(user));
+    const unsub = firebaseClient.auth.onIdTokenChanged(() => firebaseClient.generateToken());
 
     return () => {
       unsub();
