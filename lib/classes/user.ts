@@ -1,4 +1,5 @@
 import EventEmitter from 'eventemitter3';
+import { doc, getDoc } from 'firebase/firestore';
 import type UserManager from '../managers/user';
 import BaseStruct from './base';
 
@@ -28,6 +29,8 @@ export default class User extends BaseStruct implements UserOptions {
 
   name: string | null;
 
+  buddies?: UserBuddies;
+
   readonly manager: UserManager;
 
   readonly events = new EventEmitter<UserEventTypes>();
@@ -52,6 +55,16 @@ export default class User extends BaseStruct implements UserOptions {
 
   async fetch() {
     this.manager.fetch(this.id, true);
+  }
+
+  async fetchBuddies(cached = true) {
+    if (cached && this.buddies) return this.buddies;
+
+    const data = (await getDoc(doc(this.manager.client.firestore, 'buddies', this.id))).data() as UserBuddies | undefined;
+
+    this.buddies = data;
+
+    return data;
   }
 
   emitChanged() {

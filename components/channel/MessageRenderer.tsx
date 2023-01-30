@@ -140,7 +140,7 @@ const MessageEntry = ({ message, channel }: { message: Message; channel: Channel
         <section>
           <section
             ref={contentRef}
-            className="user_message"
+            className="user_message break-all whitespace-pre-line"
             dangerouslySetInnerHTML={{ __html: message.content }}
           />
 

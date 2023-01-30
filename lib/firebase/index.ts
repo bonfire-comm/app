@@ -24,6 +24,7 @@ import { Database, connectDatabaseEmulator, getDatabase, onDisconnect, onValue, 
 import { Firestore, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 
 import Router from 'next/router';
+import EventEmitter from 'eventemitter3';
 import useUser from '../store/user';
 import Providers from './authProviders';
 import useInternal from '../store';
@@ -61,6 +62,8 @@ export class Firebase {
   };
 
   private tokenIsGenerating = false;
+
+  readonly events = new EventEmitter();
 
   constructor() {
     this.app = initializeApp(this.firebaseConfig);
@@ -126,30 +129,43 @@ export class Firebase {
 
   // Auth
   async generateToken() {
-    if (this.tokenIsGenerating) return;
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise<void>(async (resolve, reject) => {
+      if (this.tokenIsGenerating) {
+        // eslint-disable-next-line no-promise-executor-return
+        return this.events.once('tokenGenerated', resolve);
+      }
 
-    this.tokenIsGenerating = true;
+      try {
+        this.tokenIsGenerating = true;
 
-    const user = this.auth.currentUser;
-    const builder = new CookieSetterBuilder();
+        const user = this.auth.currentUser;
+        const builder = new CookieSetterBuilder();
 
-    builder.remove('token:/');
+        builder.remove('token:/');
 
-    if (user) {
-      const token = await user.getIdToken();
+        if (user) {
+          const token = await user.getIdToken();
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      builder.set('token', token, {
-        httpOnly: true,
-        path: '/'
-      });
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          builder.set('token', token, {
+            httpOnly: true,
+            path: '/'
+          });
 
-      useInternal.setState({ token });
-    }
+          useInternal.setState({ token });
+        }
 
-    await builder.commit();
+        await builder.commit();
 
-    this.tokenIsGenerating = false;
+        this.tokenIsGenerating = false;
+
+        this.events.emit('tokenGenerated');
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 
   signInWithEmailAndPassword(email: string, password: string) {

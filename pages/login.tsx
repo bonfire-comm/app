@@ -37,6 +37,7 @@ export default function Login() {
       await firebaseClient.signInWithEmailAndPassword(values.email, values.password);
       await firebaseClient.generateToken();
       await router.push('/app');
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.code === 'auth/user-not-found') {

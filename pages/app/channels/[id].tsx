@@ -21,6 +21,8 @@ import { LoadingOverlay } from '@mantine/core';
 import Messages from '@/components/channel/MessageRenderer';
 import useEditMessage from '@/lib/store/editMessage';
 import Attachments, { DropArea } from '@/components/channel/AttachmentHandler';
+import { showNotification } from '@mantine/notifications';
+import Twemoji from '@/components/Twemoji';
 
 const DMInnerHeader = ({ channel }: { channel: Channel }) => {
   const currentUserId = useUser((state) => state?.id);
@@ -132,7 +134,33 @@ export default function ChannelPage() {
         message: null
       });
     } else {
-      await channel.postMessage(content, attachments);
+      try {
+        await channel.postMessage(content, attachments);
+      } catch (err: any) {
+        if (err.message === 'cooldown') {
+          return showNotification({
+            color: 'red',
+            title: <Twemoji>❌ Cooldown</Twemoji>,
+            message: 'You are sending messages too fast, please wait a bit.'
+          });
+        }
+
+        if (err.message === 'blocked') {
+          return showNotification({
+            color: 'red',
+            title: <Twemoji>❌ Blocked</Twemoji>,
+            message: 'You have been blocked from sending messages in this channel.'
+          });
+        }
+
+        if (err.message === 'not_participant') {
+          return showNotification({
+            color: 'red',
+            title: <Twemoji>❌ Not a participant</Twemoji>,
+            message: 'You are not a participant of this channel.'
+          });
+        }
+      }
     }
 
     editorRef.current?.commands.clearContent();

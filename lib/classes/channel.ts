@@ -8,6 +8,9 @@ import type ChannelManager from '../managers/channels';
 import Message from './message';
 import generateId from '../helpers/generateId';
 
+const MESSAGE_TRESHOLD = 10;
+const COOLDOWN_DURATION = 5000;
+
 export default class Channel extends BaseStruct implements ChannelData {
   id: string;
 
@@ -36,6 +39,12 @@ export default class Channel extends BaseStruct implements ChannelData {
   bans: Record<string, boolean>;
 
   private messagesUnsubscriber = noop;
+
+  private lastMessageTime = Date.now();
+
+  private messageCount = 0;
+
+  private onCooldown = false;
 
   readonly events = new EventEmitter<ChannelEventTypes>();
 
@@ -142,9 +151,57 @@ export default class Channel extends BaseStruct implements ChannelData {
     this.owner = data.owner;
   }
 
+  getUser() {
+    if (!this.isDM) return;
+
+    const uid = Object.keys(this.participants)
+      .find((p) => p !== firebaseClient.auth.currentUser?.uid);
+
+    if (!uid) return;
+
+    return firebaseClient.managers.user.fetch(uid);
+  }
+
   async postMessage(content: string, attachments?: File[]) {
     const id = push(ref(firebaseClient.rtdb, `channels/${this.id}/messages`)).key;
     if (!id || !firebaseClient.auth.currentUser) return;
+
+    if (!this.participants[firebaseClient.auth.currentUser.uid]) {
+      throw new Error('not_participant');
+    }
+
+    if (this.isDM) {
+      const user = await this.getUser();
+      if (!user) return;
+
+      const buddies = await user.fetchBuddies(false);
+      if (buddies?.blocked.includes(firebaseClient.auth.currentUser.uid)) {
+        throw new Error('blocked');
+      }
+    }
+
+    if (this.onCooldown) {
+      throw new Error('cooldown');
+    }
+
+    const currentTime = Date.now();
+
+    if (currentTime - this.lastMessageTime < 1000) {
+      this.messageCount += 1;
+
+      if (this.messageCount >= MESSAGE_TRESHOLD) {
+        this.onCooldown = true;
+
+        setTimeout(() => {
+          this.onCooldown = false;
+          this.messageCount = 0;
+        }, COOLDOWN_DURATION);
+
+        throw new Error('cooldown');
+      }
+    } else {
+      this.messageCount = 1;
+    }
 
     const data = {
       id,
