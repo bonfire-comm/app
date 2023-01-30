@@ -7,6 +7,7 @@ import firebaseClient from '../firebase';
 import type ChannelManager from '../managers/channels';
 import Message from './message';
 import generateId from '../helpers/generateId';
+import useBuddies from '../store/buddies';
 
 const MESSAGE_TRESHOLD = 10;
 const COOLDOWN_DURATION = 5000;
@@ -151,7 +152,7 @@ export default class Channel extends BaseStruct implements ChannelData {
     this.owner = data.owner;
   }
 
-  getUser() {
+  async getUser() {
     if (!this.isDM) return;
 
     const uid = Object.keys(this.participants)
@@ -175,6 +176,11 @@ export default class Channel extends BaseStruct implements ChannelData {
       if (!user) return;
 
       const buddies = await user.fetchBuddies(false);
+      const ourBuddies = useBuddies.getState();
+      if (ourBuddies.blocked.includes(user.id)) {
+        throw new Error('you-blocked');
+      }
+
       if (buddies?.blocked.includes(firebaseClient.auth.currentUser.uid)) {
         throw new Error('blocked');
       }
@@ -188,6 +194,7 @@ export default class Channel extends BaseStruct implements ChannelData {
 
     if (currentTime - this.lastMessageTime < 1000) {
       this.messageCount += 1;
+      this.lastMessageTime = currentTime;
 
       if (this.messageCount >= MESSAGE_TRESHOLD) {
         this.onCooldown = true;
@@ -201,6 +208,7 @@ export default class Channel extends BaseStruct implements ChannelData {
       }
     } else {
       this.messageCount = 1;
+      this.lastMessageTime = currentTime;
     }
 
     const data = {

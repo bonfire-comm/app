@@ -4,7 +4,6 @@ import { useForceUpdate } from '@mantine/hooks';
 import { useEffect } from 'react';
 import Channel from '@/lib/classes/channel';
 import { useAsync } from 'react-use';
-import useUser from '@/lib/store/user';
 import getInitials from '@/lib/helpers/getInitials';
 import { Avatar } from '@mantine/core';
 import NavLink from './NavLink';
@@ -15,15 +14,7 @@ interface PreviewProps {
 }
 
 const DMPreview = ({ channel }: PreviewProps) => {
-  const currentUserId = useUser((state) => state?.id);
-  const user = useAsync(async () => {
-    if (!currentUserId) return;
-
-    const [participant] = Object.keys(channel.participants).filter((v) => v !== currentUserId);
-
-    const resolved = await firebaseClient.managers.user.fetch(participant);
-    return resolved;
-  }, [channel, currentUserId]);
+  const user = useAsync(() => channel.getUser(), [channel]);
 
   if (user.loading || !user.value) return null;
 

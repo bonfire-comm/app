@@ -134,7 +134,7 @@ export default function TextEditor({
       className={className}
       classNames={{
         root: 'rounded-lg',
-        content: 'editor bg-cloudy-700 pr-12 max-h-[400px] custom_scrollbar overflow-y-auto overflow-x-hidden rounded-lg',
+        content: 'editor bg-cloudy-700 pr-28 max-h-[400px] custom_scrollbar overflow-y-auto overflow-x-hidden rounded-lg',
       }}
     >
       {editor && (

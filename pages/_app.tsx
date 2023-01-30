@@ -10,6 +10,7 @@ import useInternal from '@/lib/store';
 import { NotificationsProvider } from '@mantine/notifications';
 import { useEffect } from 'react';
 import TokenCookieProvider from '@/components/TokenCookieProvider';
+import { ModalsProvider } from '@mantine/modals';
 
 const bigShouldersDisplay = BigShouldersDisplay({
   subsets: ['latin'],
@@ -85,20 +86,22 @@ export default function App({ Component, pageProps, router }: AppProps) {
       <NotificationsProvider
         zIndex={99999999}
       >
-        <TokenCookieProvider>
-          <AnimatePresence
-            mode="wait"
-            onExitComplete={() => {
-              if (useInternal.getState().initialDelay !== 0) {
-                useInternal.setState({ initialDelay: 0 });
-              }
-            }}
-          >
-            <Component {...pageProps} key={router.asPath} />
-          </AnimatePresence>
+        <ModalsProvider>
+          <TokenCookieProvider>
+            <AnimatePresence
+              mode="wait"
+              onExitComplete={() => {
+                if (useInternal.getState().initialDelay !== 0) {
+                  useInternal.setState({ initialDelay: 0 });
+                }
+              }}
+            >
+              <Component {...pageProps} key={router.asPath} />
+            </AnimatePresence>
 
-          <VideoBackground />
-        </TokenCookieProvider>
+            <VideoBackground />
+          </TokenCookieProvider>
+        </ModalsProvider>
       </NotificationsProvider>
     </MantineProvider>
   );

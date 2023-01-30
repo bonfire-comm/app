@@ -67,6 +67,10 @@ code {
   @apply block w-full h-[2px] rounded-full border-none my-2 bg-cloudy-400;
 }
 
+.ProseMirror {
+  @apply flex flex-col gap-2;
+}
+
 @layer {
   .custom_scrollbar {
     @apply scrollbar-thin scrollbar-thumb-cloudy-500 hover:scrollbar-thumb-cloudy-400 scrollbar-track-rounded-full scrollbar-thumb-rounded-full scrollbar-track-cloudy-600;

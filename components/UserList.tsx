@@ -28,15 +28,16 @@ export default function UserList({ user, showAccept, enableMenu = true, barebone
   const router = useRouter();
 
   useEffect(() => {
-    const handler = () => forceRender();
+    const handler = () => {
+      forceRender();
+    };
 
     user.events.on('changed', handler);
 
     return () => {
       user.events.off('changed', handler);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, forceRender]);
 
   const acceptPending = async () => {
     try {

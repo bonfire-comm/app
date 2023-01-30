@@ -1,5 +1,5 @@
 import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, limit, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
-import { get, onValue, ref, set } from 'firebase/database';
+import { get, onChildChanged, ref, set } from 'firebase/database';
 import { noop } from 'lodash-es';
 import EventMap from '../classes/eventsMap';
 import User from '../classes/user';
@@ -28,19 +28,15 @@ export default class UserManager {
       unsubStatuses();
       unsubUser();
 
-      unsubStatuses = onValue(ref(this.client.rtdb, 'statuses'), async (snapshot) => {
-        const data: Record<string, UserStatus> | null = snapshot.val();
-        if (!data) return;
+      unsubStatuses = onChildChanged(ref(this.client.rtdb, 'statuses'), async (snapshot) => {
+        const id = snapshot.key;
+        const data: UserStatus | null = snapshot.val();
+        if (!data || !id) return;
 
-        Object.entries(data)
-          .forEach(([id, status]) => {
-            const u = this.cache.get(id);
-            if (!u) return;
+        const u = this.cache.get(id);
+        if (!u) return;
 
-            u.setStatus(status);
-
-            this.cache.events.emit('changed', id, u);
-          });
+        u.setStatus(data);
       });
 
       unsubUser = onSnapshot(collection(this.client.firestore, 'users'), (snapshot) => {
@@ -48,6 +44,8 @@ export default class UserManager {
           switch (changes.type) {
             case 'modified': {
               const data = changes.doc.data() as UserData;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              data.createdAt = (data as any).createdAt.toDate();
               const cached = this.cache.get(data.id);
 
               if (cached) {
@@ -234,7 +232,6 @@ export default class UserManager {
       }),
     ]);
 
-
     return true;
   }
 
@@ -271,6 +268,9 @@ export default class UserManager {
 
     const main = (await getDoc(doc(this.client.firestore, 'users', id)).catch(() => null))?.data() as UserData | undefined;
     if (!main) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    main.createdAt = (main as any).createdAt.toDate();
 
     const status = (await get(ref(this.client.rtdb, `statuses/${id}`)).catch(() => null))?.val() as UserStatus | undefined ?? 'offline';
 

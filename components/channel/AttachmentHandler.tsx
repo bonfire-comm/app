@@ -4,14 +4,17 @@ import { faUpload, faFileAudio, faFile, faXmark } from '@fortawesome/free-solid-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { LoadingOverlay } from '@mantine/core';
 import { Dropzone, IMAGE_MIME_TYPE } from '@mantine/dropzone';
+import { MutableRefObject } from 'react';
 
 interface DropAreaProps {
   onDrop: (files: File[]) => void;
+  openRef?: MutableRefObject<() => void>;
 }
 
-export const DropArea = ({ onDrop }: DropAreaProps) => (
+export const DropArea = ({ onDrop, openRef }: DropAreaProps) => (
   <Dropzone.FullScreen
     onDrop={onDrop}
+    openRef={openRef}
     maxFiles={10}
     maxSize={1024 * 1024 * 10}
     classNames={{

@@ -2,9 +2,9 @@ import firebaseClient from '@/lib/firebase';
 import { ReactNode } from 'react';
 import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
-import { Button, Divider } from '@mantine/core';
+import { ActionIcon, Divider, Menu } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import { faEllipsisV, faPencil, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
 import CookieSetterBuilder from '@/lib/managers/cookie';
 import Logo from './Logo';
@@ -22,28 +22,54 @@ const ControlBar = () => {
   const user = useUser();
   const router = useRouter();
 
+  const logout = async () => {
+    await new CookieSetterBuilder().remove('token:/').commit();
+
+    Promise.all([
+      firebaseClient.auth.signOut(),
+      router.push('/login')
+    ]);
+  };
+
   if (!user) return null;
 
   return (
     <section className="px-4 justify-between gap-4 flex items-center bg-cloudy-800 bg-opacity-40">
       <UserList user={user} barebone />
 
-      <Button
-        color="red"
-        variant="subtle"
-        onClick={async () => {
-          await new CookieSetterBuilder().remove('token:/').commit();
+      <Menu width={200} offset={10} withArrow arrowSize={8}>
+        <Menu.Target>
+          <ActionIcon color="gray" radius="xl">
+            <FontAwesomeIcon
+              icon={faEllipsisV}
+            />
+          </ActionIcon>
+        </Menu.Target>
 
-          Promise.all([
-            firebaseClient.auth.signOut(),
-            router.push('/login')
-          ]);
-        }}
-      >
-        <FontAwesomeIcon
-          icon={faRightFromBracket}
-        />
-      </Button>
+        <Menu.Dropdown>
+          <Menu.Item
+            icon={
+              <FontAwesomeIcon
+                icon={faPencil}
+              />
+            }
+          >
+            Edit profile
+          </Menu.Item>
+
+          <Menu.Item
+            color="red"
+            icon={
+              <FontAwesomeIcon
+                icon={faRightFromBracket}
+              />
+            }
+            onClick={logout}
+          >
+            Logout
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
     </section>
   );
 };

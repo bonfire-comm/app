@@ -9,7 +9,7 @@ import Channel from '@/lib/classes/channel';
 import firebaseClient from '@/lib/firebase';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 import useUser from '@/lib/store/user';
-import { faAt, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
+import { faAt, faPaperPlane, faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
 import { useWindowEvent } from '@mantine/hooks';
@@ -23,6 +23,8 @@ import useEditMessage from '@/lib/store/editMessage';
 import Attachments, { DropArea } from '@/components/channel/AttachmentHandler';
 import { showNotification } from '@mantine/notifications';
 import Twemoji from '@/components/Twemoji';
+import trimEmptyParagraphTag from '@/lib/helpers/trimEmptyParagraphTag';
+import { noop } from 'lodash-es';
 
 const DMInnerHeader = ({ channel }: { channel: Channel }) => {
   const currentUserId = useUser((state) => state?.id);
@@ -64,6 +66,8 @@ const InnerHeader = ({ channel }: { channel?: Channel | null }) => (
   </>
 );
 
+const ACTION_ICON_CLASS_NAME = 'cursor-pointer h-full grid place-items-center text-cloudy-300 hover:text-cloudy-50 hover:bg-cloudy-600 hover:bg-opacity-50 transition-colors duration-100 px-4';
+
 export default function ChannelPage() {
   const router = useRouter();
   const editorRef = useRef<Editor | null>(null);
@@ -71,6 +75,7 @@ export default function ChannelPage() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const editMessage = useEditMessage();
+  const openRef = useRef<() => void>(noop);
 
   // Channel cache
   useEffect(() => {
@@ -135,10 +140,13 @@ export default function ChannelPage() {
       });
     } else {
       try {
-        await channel.postMessage(content, attachments);
+        await channel.postMessage(trimEmptyParagraphTag(content), attachments);
       } catch (err: any) {
+        setSending(false);
+
         if (err.message === 'cooldown') {
           return showNotification({
+            id: 'cooldown-error',
             color: 'red',
             title: <Twemoji>❌ Cooldown</Twemoji>,
             message: 'You are sending messages too fast, please wait a bit.'
@@ -149,7 +157,15 @@ export default function ChannelPage() {
           return showNotification({
             color: 'red',
             title: <Twemoji>❌ Blocked</Twemoji>,
-            message: 'You have been blocked from sending messages in this channel.'
+            message: 'You have been blocked by this user.'
+          });
+
+        }
+        if (err.message === 'you-blocked') {
+          return showNotification({
+            color: 'red',
+            title: <Twemoji>❌ Blocked</Twemoji>,
+            message: 'You have blocked this user.'
           });
         }
 
@@ -160,6 +176,12 @@ export default function ChannelPage() {
             message: 'You are not a participant of this channel.'
           });
         }
+
+        return showNotification({
+          color: 'red',
+          title: <Twemoji>❌ Error</Twemoji>,
+          message: 'Something went wrong, please try again later.'
+        });
       }
     }
 
@@ -202,7 +224,7 @@ export default function ChannelPage() {
         </section>
       }
     >
-      <DropArea onDrop={onAttachment} />
+      <DropArea onDrop={onAttachment} openRef={openRef} />
 
       <section className="flex flex-col flex-grow overflow-hidden">
         <Messages channel={channel} />
@@ -226,13 +248,21 @@ export default function ChannelPage() {
             <LoadingOverlay visible={sending} />
 
             <section
-              className="cursor-pointer hover:bg-cloudy-600 hover:bg-opacity-50 transition-colors duration-100 rounded-lg absolute top-[1px] right-[1px] bottom-[1px] z-10 w-12 grid place-items-center"
-              onClick={() => send()}
+              className="rounded-lg absolute top-[1px] right-[1px] bottom-[1px] z-10 flex"
             >
-              <FontAwesomeIcon
-                icon={faPaperPlane}
-                size="lg"
-              />
+              <span onClick={() => openRef.current()} className={ACTION_ICON_CLASS_NAME}>
+                <FontAwesomeIcon
+                  icon={faPlusCircle}
+                  size="lg"
+                />
+              </span>
+
+              <span onClick={() => send()} className={ACTION_ICON_CLASS_NAME}>
+                <FontAwesomeIcon
+                  icon={faPaperPlane}
+                  size="lg"
+                />
+              </span>
             </section>
 
             <TextEditor
