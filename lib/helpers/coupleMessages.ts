@@ -5,26 +5,27 @@ export default function coupleMessages(messages: Message[]) {
   // 1. coupled messages should be only from the same author
   // 2. the message createdAt date in a group must be within 5 minutes each
   // 3. each group only can hold 10 messages
+  // use array functions to make it easier to read
 
-  const groups: Message[][] = [];
-  let group: Message[] = [];
+  return messages
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .reduce((acc, message) => {
+      const last = acc[acc.length - 1];
+      if (!last) {
+        return acc.concat([[message]]);
+      }
 
-  // eslint-disable-next-line no-restricted-syntax
-  for (const message of messages) {
-    if (
-      group.length === 0 ||
-      group[0].author !== message.author ||
-      message.createdAt.getTime() - group[0].createdAt.getTime() > 5 * 60 * 1000 ||
-      group.length >= 10
-    ) {
-      if (group.length > 0) groups.push(group);
-      group = [];
-    }
+      const lastMessage = last[last.length - 1];
+      if (
+        message.author === lastMessage.author
+        && message.createdAt.getTime() - lastMessage.createdAt.getTime() <= 1000 * 60 * 5
+        && last.length < 10
+      ) {
+        last.push(message);
+      } else {
+        acc.push([message]);
+      }
 
-    group.push(message);
-  }
-
-  if (group.length > 0) groups.push(group);
-
-  return groups;
+      return acc;
+    }, [] as Message[][]);
 }

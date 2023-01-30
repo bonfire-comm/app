@@ -2,17 +2,18 @@
 import Channel from '@/lib/classes/channel';
 import Message from '@/lib/classes/message';
 import firebaseClient from '@/lib/firebase';
+import coupleMessages from '@/lib/helpers/coupleMessages';
 import download from '@/lib/helpers/download';
 import useEditMessage from '@/lib/store/editMessage';
 import { faDownload, faFile, faIdCard, faPencil, faTrash, faUserPen } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Tooltip } from '@mantine/core';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
-import { useClipboard, useForceUpdate } from '@mantine/hooks';
+import { useClipboard } from '@mantine/hooks';
 import { toHtml } from 'hast-util-to-html';
 import { lowlight } from 'lowlight';
 import { DateTime } from 'luxon';
-import { useReducer, createRef, useEffect, useLayoutEffect, useRef, UIEventHandler } from 'react';
+import { useReducer, createRef, useEffect, useLayoutEffect, useRef, UIEventHandler, useMemo, Fragment } from 'react';
 import { useAsync } from 'react-use';
 
 const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentData}) => {
@@ -67,6 +68,55 @@ const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentD
   );
 };
 
+const EditedMark = ({ editedAt }: {editedAt: Date}) => (
+  <Tooltip
+    label={
+      <>
+        <span className="capitalize">{DateTime.fromJSDate(editedAt).toRelativeCalendar()}</span>
+        {' at '}
+        <span className="capitalize">{DateTime.fromJSDate(editedAt).toFormat('HH:mm')}</span>
+      </>
+    }
+    color="blue"
+    withArrow
+    arrowSize={6}
+    position="top"
+    className="text-cloudy-300 text-sm"
+  >
+    <span>(edited)</span>
+  </Tooltip>
+);
+
+const Attachments = ({ attachments }: { attachments: ChannelMessageAttachmentData[] }) => (
+  <section className="flex flex-col w-auto gap-4 mt-2">
+    {attachments.map((a) => <AttachmentEntry key={a.id ?? a.url} attachment={a} />)}
+  </section>
+);
+
+const ActionPopOver = ({ message }: { message: Message }) => {
+  const clipboard = useClipboard({ timeout: 2000 });
+
+  return (
+    <section className="hidden group-hover:block absolute right-4 -top-2 bg-cloudy-500 overflow-hidden rounded-lg border-[1px] border-cloudy-400 border-opacity-50">
+      {message.author === firebaseClient.auth.currentUser?.uid && (
+        <>
+          <span onClick={() => useEditMessage.setState({ editing: true, message })} className="cursor-pointer p-2 hover:bg-cloudy-600">
+            <FontAwesomeIcon icon={faPencil} size="sm" />
+          </span>
+
+          <span onClick={() => message.delete()} className="cursor-pointer p-2 hover:bg-cloudy-600">
+            <FontAwesomeIcon icon={faTrash} className="text-red-500" size="sm" />
+          </span>
+        </>
+      )}
+
+      <span onClick={() => clipboard.copy(message.id)} className="cursor-pointer p-2 hover:bg-cloudy-600">
+        <FontAwesomeIcon icon={faIdCard} size="sm" />
+      </span>
+    </section>
+  );
+};
+
 const MessageEntry = ({ message, channel }: { message: Message; channel: Channel }) => {
   const editingMessage = useEditMessage((state) => state.message);
   const [val, forceUpdate] = useReducer((v) => v + 1, 0);
@@ -83,7 +133,6 @@ const MessageEntry = ({ message, channel }: { message: Message; channel: Channel
   }, [message, channel, forceUpdate]);
 
   const user = useAsync(() => firebaseClient.managers.user.fetch(message.author), [message.author]);
-  const clipboard = useClipboard({ timeout: 2000 });
 
   useLayoutEffect(() => {
     if (contentRef.current && message) {
@@ -103,29 +152,13 @@ const MessageEntry = ({ message, channel }: { message: Message; channel: Channel
   }, [message, contentRef, val]);
 
   return (
-    <section className={['group relative px-6 py-3 flex items-start gap-3', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
-      <section className="hidden group-hover:block absolute right-4 -top-2 bg-cloudy-500 overflow-hidden rounded-lg border-[1px] border-cloudy-400 border-opacity-50">
-        {message.author === firebaseClient.auth.currentUser?.uid && (
-          <>
-            <span onClick={() => useEditMessage.setState({ editing: true, message })} className="cursor-pointer p-2 hover:bg-cloudy-600">
-              <FontAwesomeIcon icon={faPencil} size="sm" />
-            </span>
-
-            <span onClick={() => message.delete()} className="cursor-pointer p-2 hover:bg-cloudy-600">
-              <FontAwesomeIcon icon={faTrash} className="text-red-500" size="sm" />
-            </span>
-          </>
-        )}
-
-        <span onClick={() => clipboard.copy(message.id)} className="cursor-pointer p-2 hover:bg-cloudy-600">
-          <FontAwesomeIcon icon={faIdCard} size="sm" />
-        </span>
-      </section>
+    <section className={['group relative px-6 py-1 flex items-start gap-4', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
+      <ActionPopOver message={message} />
 
       <img src={user.value?.image} alt="" className="w-12 rounded-full" />
 
       <section className="flex-grow">
-        <section className="flex gap-3 items-end mb-1">
+        <section className="flex gap-3 items-end mb-[2px]">
           <h3 className="font-extrabold">{user.value?.name}</h3>
 
           {message.createdAt && (
@@ -137,47 +170,80 @@ const MessageEntry = ({ message, channel }: { message: Message; channel: Channel
           )}
         </section>
 
-        <section>
+        <section className="flex-grow">
           <section
             ref={contentRef}
             className="user_message break-all whitespace-pre-line"
             dangerouslySetInnerHTML={{ __html: message.content }}
           />
 
-          {message.editedAt && (
-            <Tooltip
-              label={
-                <>
-                  <span className="capitalize">{DateTime.fromJSDate(message.editedAt).toRelativeCalendar()}</span>
-                  {' at '}
-                  <span className="capitalize">{DateTime.fromJSDate(message.editedAt).toFormat('HH:mm')}</span>
-                </>
-              }
-              color="blue"
-              withArrow
-              arrowSize={6}
-              position="right"
-              className="text-cloudy-300 text-sm"
-            >
-              <span>(edited)</span>
-            </Tooltip>
-          )}
+          {message.editedAt && <EditedMark editedAt={message.editedAt} />}
         </section>
 
-        {message.attachments?.length && (
-          <section className="flex flex-col w-auto gap-4 mt-2">
-            {message.attachments.map((a) => <AttachmentEntry key={a.id ?? a.url} attachment={a} />)}
-          </section>
-        )}
+        {message.attachments?.length && <Attachments attachments={message.attachments} />}
       </section>
     </section>
   );
 };
 
-const Messages = ({ channel }: { channel?: Channel | null }) => {
-  const forceUpdate = useForceUpdate();
-  const lockScroll = useRef<boolean>(true);
+const HeadlessMessageEntry = ({ message, channel }: { message: Message; channel: Channel }) => {
+  const editingMessage = useEditMessage((state) => state.message);
+  const [val, forceUpdate] = useReducer((v) => v + 1, 0);
+  const contentRef = createRef<HTMLDivElement>();
 
+  useEffect(() => {
+    const listener = () => forceUpdate();
+
+    channel.events.on(`message-${message.id}`, listener);
+
+    return () => {
+      channel.events.off(`message-${message.id}`, listener);
+    };
+  }, [message, channel, forceUpdate]);
+
+  useLayoutEffect(() => {
+    if (contentRef.current && message) {
+      contentRef.current.innerHTML = message.content;
+
+      const els = contentRef.current.querySelectorAll<HTMLElement>('pre code');
+      els.forEach((el) => {
+        const lang = el.className.split('-')[1];
+        const tree = lowlight.highlight(lang, el.innerHTML.trim());
+        const html = toHtml(tree);
+
+        el.classList.add('hljs');
+        // eslint-disable-next-line no-param-reassign
+        el.innerHTML = html;
+      });
+    }
+  }, [message, contentRef, val]);
+
+  return (
+    <section className={['group relative px-6 py-1 flex gap-4 items-center', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
+      <ActionPopOver message={message} />
+
+      <section className="w-12 flex items-center justify-center h-full select-none">
+        <p className="text-xs text-cloudy-400 hidden group-hover:block">{DateTime.fromJSDate(message.createdAt).toFormat('HH:mm')}</p>
+      </section>
+
+      <section>
+        <section
+          ref={contentRef}
+          className="user_message break-all whitespace-pre-line"
+          dangerouslySetInnerHTML={{ __html: message.content }}
+        />
+
+        {message.editedAt && <EditedMark editedAt={message.editedAt} />}
+      </section>
+
+      {message.attachments?.length && <Attachments attachments={message.attachments} />}
+    </section>
+  );
+};
+
+const Messages = ({ channel }: { channel?: Channel | null }) => {
+  const [updateCount, forceUpdate] = useReducer((v) => v + 1, 0);
+  const lockScroll = useRef<boolean>(true);
   const messagesRef = createRef<HTMLDivElement>();
 
   const onScroll: UIEventHandler<HTMLDivElement> = (e) => {
@@ -232,8 +298,11 @@ const Messages = ({ channel }: { channel?: Channel | null }) => {
     messagesRef.current.scrollTo(0, messagesRef.current.scrollHeight);
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const coupledMessages = useMemo(() => channel && coupleMessages(channel.messages), [channel, updateCount]);
+
   return (
-    <section ref={messagesRef} onScroll={onScroll} className="flex-grow flex flex-col overflow-y-auto custom_scrollbar mr-1 mt-1">
+    <section ref={messagesRef} onScroll={onScroll} className="flex-grow gap-4 flex flex-col overflow-y-auto custom_scrollbar mr-1 mt-1">
       <section className="min-h-[300px] flex-grow flex flex-col opacity-50 items-center justify-center">
         <FontAwesomeIcon
           icon={faUserPen}
@@ -244,7 +313,17 @@ const Messages = ({ channel }: { channel?: Channel | null }) => {
         <h3 className="font-bold text-xl">This is the beginning...</h3>
       </section>
 
-      {channel && channel.messages.map((message) => (<MessageEntry key={message.id} message={message} channel={channel} />))}
+      {channel && coupledMessages && coupledMessages.map((messages, k) => (
+        <section key={k}>
+          {messages.map((message, i) => {
+            if (i === 0) {
+              return (<MessageEntry key={message.id} message={message} channel={channel} />);
+            }
+
+            return <HeadlessMessageEntry key={message.id} message={message} channel={channel} />;
+          })}
+        </section>
+      ))}
     </section>
   );
 };
