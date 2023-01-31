@@ -351,8 +351,6 @@ export default class UserManager {
 
     if (data.image) {
       finalData.image = await this.uploadProfilePicture(data.image);
-    } else {
-      finalData.image = await generateAvatar(512, data.name);
     }
 
     await updateDoc(doc(this.client.firestore, 'users', uid), {

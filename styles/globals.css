@@ -67,6 +67,10 @@ code {
   @apply block w-full h-[2px] rounded-full border-none my-2 bg-cloudy-400;
 }
 
+.user_message a, .editor a {
+  @apply text-blue-400 hover:underline hover:underline-offset-2;
+}
+
 .ProseMirror {
   @apply flex flex-col gap-2;
 }

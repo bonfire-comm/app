@@ -79,6 +79,16 @@ export default function App({ Component, pageProps, router }: AppProps) {
               tab: 'px-2 font-semibold py-2 data-[active=true]:bg-cloudy-500 transition-color duration-200 ease-in-out',
               tabsList: 'gap-3'
             }
+          },
+          Modal: {
+            classNames: {
+              title: 'font-extrabold text-xl'
+            }
+          },
+          InputWrapper: {
+            classNames: {
+              label: 'font-extrabold text-cloudy-300 mb-1 block'
+            }
           }
         }
       }}

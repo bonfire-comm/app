@@ -9,6 +9,9 @@ import { noop } from 'lodash-es';
 import { Editor } from '@tiptap/core';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { lowlight } from 'lowlight';
+import CharacterCount from '@tiptap/extension-character-count';
+import Link from '@tiptap/extension-link';
+import EnterHandler from '@/lib/tiptap/enterHandler';
 
 import tsLanguageSyntax from 'highlight.js/lib/languages/typescript';
 import jsLanguageSyntax from 'highlight.js/lib/languages/javascript';
@@ -24,7 +27,6 @@ import rustLanguageSyntax from 'highlight.js/lib/languages/rust';
 import dockerLanguageSyntax from 'highlight.js/lib/languages/dockerfile';
 import goLanguageSyntax from 'highlight.js/lib/languages/go';
 import xmlLanguageSyntax from 'highlight.js/lib/languages/xml';
-import EnterHandler from '@/lib/tiptap/enterHandler';
 
 lowlight.registerLanguage('typescript', tsLanguageSyntax);
 lowlight.registerLanguage('javascript', jsLanguageSyntax);
@@ -62,10 +64,12 @@ interface Props {
   placeholder?: string;
   clearOnSend?: boolean;
   editorRef?: MutableRefObject<Editor | null>;
+  maxCharacters?: number;
+  rightPadding?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange?: (editor: Editor) => any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSend: (content: string) => any;
+  onSend?: (content: string) => any;
 }
 
 export default function TextEditor({
@@ -75,13 +79,15 @@ export default function TextEditor({
   onChange = noop,
   className,
   placeholder,
-  onSend = noop
+  onSend = noop,
+  maxCharacters,
+  rightPadding = true
 }: Props) {
   const editor = useEditor({
     extensions: [
       // OneLiner,
       StarterKit.configure({
-        codeBlock: false
+        codeBlock: false,
       }),
       Placeholder.configure({ placeholder }),
       CodeBlockLowlight.configure({
@@ -89,7 +95,13 @@ export default function TextEditor({
         defaultLanguage: 'plaintext',
         exitOnArrowDown: true
       }),
-      EnterHandler
+      EnterHandler,
+      CharacterCount.configure({
+        limit: maxCharacters,
+      }),
+      Link.configure({
+        protocols: ['mailto'],
+      })
     ],
     content,
     onUpdate({ editor: e }) {
@@ -133,8 +145,11 @@ export default function TextEditor({
       onKeyDown={onKeyDown}
       className={className}
       classNames={{
-        root: 'rounded-lg',
-        content: 'editor bg-cloudy-700 pr-28 max-h-[400px] custom_scrollbar overflow-y-auto overflow-x-hidden rounded-lg',
+        root: 'rounded-xl',
+        content: [
+          'editor bg-cloudy-700 max-h-[400px] custom_scrollbar overflow-y-auto overflow-x-hidden rounded-lg',
+          rightPadding && 'pr-28',
+        ].filter(Boolean).join(' '),
       }}
     >
       {editor && (

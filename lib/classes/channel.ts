@@ -105,6 +105,7 @@ export default class Channel extends BaseStruct implements ChannelData {
 
         if (cached && !isEqual(cached.toJSON(), data)) {
           cached.set(data);
+          this.messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
           this.events.emit(`message-${data.id}`, cached);
         }
       }

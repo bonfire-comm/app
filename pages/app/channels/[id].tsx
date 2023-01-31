@@ -12,10 +12,10 @@ import useUser from '@/lib/store/user';
 import { faAt, faPaperPlane, faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
-import { useWindowEvent } from '@mantine/hooks';
+import { useForceUpdate, useWindowEvent } from '@mantine/hooks';
 import type { Editor } from '@tiptap/core';
 import { useRouter } from 'next/router';
-import { useEffect, useRef, useState } from 'react';
+import { MutableRefObject, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-use';
 import { LoadingOverlay } from '@mantine/core';
 import Messages from '@/components/channel/MessageRenderer';
@@ -66,6 +66,25 @@ const InnerHeader = ({ channel }: { channel?: Channel | null }) => (
   </>
 );
 
+const MAX_CHARACTER = 2000;
+
+const CharacterCounter = ({ editor, forceUpdateRef }: { editor: MutableRefObject<Editor | null>; forceUpdateRef?: MutableRefObject<() => void> }) => {
+  const force = useForceUpdate();
+
+  useEffect(() => {
+    // eslint-disable-next-line no-param-reassign
+    if (forceUpdateRef) forceUpdateRef.current = force;
+  }, [forceUpdateRef, force]);
+
+  const currentAmount = editor.current?.storage.characterCount.characters() ?? 0;
+
+  return (
+    <section className={['select-none text-sm', MAX_CHARACTER - currentAmount <= 100 ? 'text-red-500 font-medium' : 'text-cloudy-300'].filter(Boolean).join(' ')}>
+      {currentAmount}/{MAX_CHARACTER} characters
+    </section>
+  );
+};
+
 const ACTION_ICON_CLASS_NAME = 'cursor-pointer h-full grid place-items-center text-cloudy-300 hover:text-cloudy-50 hover:bg-cloudy-600 hover:bg-opacity-50 transition-colors duration-100 px-4';
 
 export default function ChannelPage() {
@@ -76,6 +95,7 @@ export default function ChannelPage() {
   const [sending, setSending] = useState(false);
   const editMessage = useEditMessage();
   const openRef = useRef<() => void>(noop);
+  const characterCountRender = useRef<() => void>(noop);
 
   // Channel cache
   useEffect(() => {
@@ -274,10 +294,16 @@ export default function ChannelPage() {
               placeholder="Write your message here"
               onSend={send}
               clearOnSend={false}
+              maxCharacters={MAX_CHARACTER}
+              onChange={() => characterCountRender.current()}
             />
           </section>
 
-          <p className="select-none text-xs opacity-60">Use <code>ctrl + enter</code> to send</p>
+          <section className="flex justify-between items-center">
+            <p className="select-none text-xs opacity-60">Use <code>ctrl + enter</code> to send</p>
+
+            <CharacterCounter editor={editorRef} forceUpdateRef={characterCountRender} />
+          </section>
         </section>
       </section>
     </Layout>

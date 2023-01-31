@@ -2,7 +2,6 @@ import Message from '../classes/message';
 
 export default function coupleMessages(messages: Message[]) {
   return messages
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
     .reduce((acc, message) => {
       const last = acc[acc.length - 1];
       if (!last) {
