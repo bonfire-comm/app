@@ -207,6 +207,8 @@ export default function ChannelPage() {
         editing: false,
         message: null
       });
+
+      editorRef.current?.commands.clearContent();
     }
   });
 

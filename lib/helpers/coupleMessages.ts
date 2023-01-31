@@ -1,12 +1,6 @@
 import Message from '../classes/message';
 
 export default function coupleMessages(messages: Message[]) {
-  // couple messages to an array if:
-  // 1. coupled messages should be only from the same author
-  // 2. the message createdAt date in a group must be within 5 minutes each
-  // 3. each group only can hold 10 messages
-  // use array functions to make it easier to read
-
   return messages
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
     .reduce((acc, message) => {
