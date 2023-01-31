@@ -79,7 +79,7 @@ export default function ChannelPage() {
 
   // Channel cache
   useEffect(() => {
-    const handler = (id: string, ch: Channel) => setChannel(ch);
+    const handler = (id: string, ch: Channel) => router.query.id === id && setChannel(ch);
 
     firebaseClient.managers.channels.cache.events.on('changed', handler);
     firebaseClient.managers.channels.cache.events.on('set', handler);
@@ -88,7 +88,7 @@ export default function ChannelPage() {
       firebaseClient.managers.channels.cache.events.off('changed', handler);
       firebaseClient.managers.channels.cache.events.off('set', handler);
     };
-  }, []);
+  }, [router]);
 
   // Message register & Clean up
   useEffect(() => {
