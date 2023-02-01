@@ -75,6 +75,10 @@ code {
   @apply flex flex-col gap-2;
 }
 
+.embed::before {
+  background: var(--before-color);
+}
+
 @layer {
   .custom_scrollbar {
     @apply scrollbar-thin scrollbar-thumb-cloudy-500 hover:scrollbar-thumb-cloudy-400 scrollbar-track-rounded-full scrollbar-thumb-rounded-full scrollbar-track-cloudy-600;

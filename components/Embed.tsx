@@ -1,0 +1,60 @@
+/* eslint-disable @next/next/no-img-element */
+import { ReactNode } from 'react';
+import YouTube from 'react-youtube';
+
+export const EmbedMediaPreview = ({ data }: { data: EmbedData}) => {
+  const Container = ({ children }: { children: ReactNode }) => <section className="mt-2 rounded-lg overflow-hidden">{children}</section>;
+
+  if (data.publisher === 'YouTube') {
+    const id = data.url?.split('v=')[1];
+    if (!id) return null;
+
+    return (
+      <Container>
+        <YouTube videoId={id} className="w-full" iframeClassName="w-full h-64 object-fit" />
+      </Container>
+    );
+  }
+
+  if (data.image) {
+    return (
+      <Container>
+        <img src={data.image} alt="" />
+      </Container>
+    );
+  }
+
+  return null;
+};
+
+export default function Embed({ data }: { data: EmbedData }) {
+  return (
+    (
+      <section
+        className="embed overflow-hidden min-w-[8rem] max-w-lg rounded-xl px-6 py-4 bg-cloudy-500 bg-opacity-80 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:z-10 before:w-[6px]"
+        style={{
+          // @ts-expect-error --before-color is not a valid css property
+          '--before-color': data.color ?? '#FFFFFF',
+        }}
+      >
+        <section className="flex justify-between gap-4 items-start">
+          <section>
+            {data.title && (
+              <h2 className="font-extrabold text-lg">
+                {!data.url && data.title}
+                {data.url && (
+                  <a className="hover:underline hover:underline-offset-1" href={data.url} rel="noreferrer" target="_blank">{data.title}</a>
+                )}
+              </h2>
+            )}
+            {data.description && <p>{data.description}</p>}
+          </section>
+
+          {data.logo && <img className="w-8 h-auto" src={data.logo} alt="" />}
+        </section>
+
+        <EmbedMediaPreview data={data} />
+      </section>
+    )
+  );
+}

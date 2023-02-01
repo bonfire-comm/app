@@ -4,6 +4,7 @@ import Message from '@/lib/classes/message';
 import firebaseClient from '@/lib/firebase';
 import coupleMessages from '@/lib/helpers/coupleMessages';
 import download from '@/lib/helpers/download';
+import fetchEmbed from '@/lib/helpers/fetchEmbed';
 import useEditMessage from '@/lib/store/editMessage';
 import { faDownload, faFile, faIdCard, faPencil, faTrash, faUserPen } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -13,8 +14,9 @@ import { useClipboard } from '@mantine/hooks';
 import { toHtml } from 'hast-util-to-html';
 import { lowlight } from 'lowlight';
 import { DateTime } from 'luxon';
-import { useReducer, createRef, useEffect, useLayoutEffect, useRef, UIEventHandler, useMemo, Fragment } from 'react';
+import { useReducer, createRef, useEffect, useLayoutEffect, useRef, UIEventHandler, RefObject, useState, useMemo, memo } from 'react';
 import { useAsync } from 'react-use';
+import Embed from '../Embed';
 
 const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentData}) => {
   if (IMAGE_MIME_TYPE.includes(attachment.type as typeof IMAGE_MIME_TYPE[number])) {
@@ -117,8 +119,36 @@ const ActionPopOver = ({ message }: { message: Message }) => {
   );
 };
 
-const MessageEntry = ({ message, channel }: { message: Message; channel: Channel }) => {
-  const editingMessage = useEditMessage((state) => state.message);
+const EmbedRenderer = memo(({ content, contentRef }: { content: string; contentRef: RefObject<HTMLDivElement> }) => {
+  const [embeds, setEmbeds] = useState<EmbedData[]>([]);
+
+  useEffect(() => {
+    const cancel = new AbortController();
+
+    (async () => {
+      if (!contentRef.current) return;
+
+      const els = [...contentRef.current.querySelectorAll('a')];
+      const all = (await Promise.all(els.map((el) => fetchEmbed(el.href, cancel.signal)))).filter(Boolean) as EmbedData[];
+
+      setEmbeds(all);
+    })();
+
+    return () => cancel.abort();
+  }, [content, contentRef]);
+
+  const memoizedEmbeds = useMemo(() => embeds, [embeds]);
+
+  return (
+    <section className="mt-1">
+      {memoizedEmbeds.map((v, i) => (<Embed data={v} key={i} />))}
+    </section>
+  );
+}, (prev, next) => prev.content === next.content);
+
+EmbedRenderer.displayName = 'EmbedRenderer';
+
+const MessageEntry = memo(({ message, channel, editingMessage }: { message: Message; channel: Channel; editingMessage?: Message | null }) => {
   const [val, forceUpdate] = useReducer((v) => v + 1, 0);
   const contentRef = createRef<HTMLDivElement>();
 
@@ -130,7 +160,7 @@ const MessageEntry = ({ message, channel }: { message: Message; channel: Channel
     return () => {
       channel.events.off(`message-${message.id}`, listener);
     };
-  }, [message, channel, forceUpdate]);
+  }, [message, channel]);
 
   const user = useAsync(() => firebaseClient.managers.user.fetch(message.author), [message.author]);
 
@@ -152,7 +182,7 @@ const MessageEntry = ({ message, channel }: { message: Message; channel: Channel
   }, [message, contentRef, val]);
 
   return (
-    <section className={['group relative px-6 py-1 flex items-start gap-4', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
+    <section id={message.id} className={['group relative px-6 py-1 flex items-start gap-4', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
       <ActionPopOver message={message} />
 
       <img src={user.value?.image} alt="" className="w-12 rounded-full" />
@@ -180,14 +210,17 @@ const MessageEntry = ({ message, channel }: { message: Message; channel: Channel
           {message.editedAt && <EditedMark editedAt={message.editedAt} />}
         </section>
 
+        <EmbedRenderer contentRef={contentRef} content={message.content} />
+
         {message.attachments?.length && <Attachments attachments={message.attachments} />}
       </section>
     </section>
   );
-};
+});
 
-const HeadlessMessageEntry = ({ message, channel }: { message: Message; channel: Channel }) => {
-  const editingMessage = useEditMessage((state) => state.message);
+MessageEntry.displayName = 'MessageEntry';
+
+const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { message: Message; channel: Channel; editingMessage?: Message | null }) => {
   const [val, forceUpdate] = useReducer((v) => v + 1, 0);
   const contentRef = createRef<HTMLDivElement>();
 
@@ -219,7 +252,7 @@ const HeadlessMessageEntry = ({ message, channel }: { message: Message; channel:
   }, [message, contentRef, val]);
 
   return (
-    <section className={['group relative px-6 py-1 flex gap-4 items-center', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
+    <section id={message.id} className={['group relative px-6 py-1 flex gap-4 items-center', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
       <ActionPopOver message={message} />
 
       <section className="w-12 flex items-center justify-center h-full select-none">
@@ -236,15 +269,20 @@ const HeadlessMessageEntry = ({ message, channel }: { message: Message; channel:
         {message.editedAt && <EditedMark editedAt={message.editedAt} />}
       </section>
 
+      <EmbedRenderer contentRef={contentRef} content={message.content} />
+
       {message.attachments?.length && <Attachments attachments={message.attachments} />}
     </section>
   );
-};
+});
+
+HeadlessMessageEntry.displayName = 'HeadlessMessageEntry';
 
 const Messages = ({ channel }: { channel?: Channel | null }) => {
-  const [updateCount, forceUpdate] = useReducer((v) => v + 1, 0);
+  const editingMessage = useEditMessage((s) => s.message);
   const lockScroll = useRef<boolean>(true);
   const messagesRef = createRef<HTMLDivElement>();
+  const [coupledMessages, setCoupledMessages] = useState<Message[][]>([]);
 
   const onScroll: UIEventHandler<HTMLDivElement> = (e) => {
     const el = e.currentTarget;
@@ -260,7 +298,7 @@ const Messages = ({ channel }: { channel?: Channel | null }) => {
     if (!channel) return;
 
     const listener = () => {
-      forceUpdate();
+      setCoupledMessages(coupleMessages(channel.messages));
     };
 
     channel.events.on('message', listener);
@@ -268,28 +306,7 @@ const Messages = ({ channel }: { channel?: Channel | null }) => {
     return () => {
       channel.events.off('message', listener);
     };
-  }, [channel, forceUpdate]);
-
-  const lastHeight = useRef<number>(0);
-
-  useEffect(() => {
-    if (!messagesRef.current) return;
-
-    const observeTarget = messagesRef.current;
-    const resizeObserver = new ResizeObserver(() => {
-      if (observeTarget.clientHeight !== lastHeight.current && lockScroll) {
-        observeTarget.scrollTo(0, observeTarget.scrollHeight);
-      }
-
-      lastHeight.current = observeTarget.clientHeight;
-    });
-
-    resizeObserver.observe(observeTarget);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [messagesRef, lockScroll]);
+  }, [channel]);
 
   useLayoutEffect(() => {
     if (!messagesRef.current) return;
@@ -297,9 +314,6 @@ const Messages = ({ channel }: { channel?: Channel | null }) => {
 
     messagesRef.current.scrollTo(0, messagesRef.current.scrollHeight);
   });
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const coupledMessages = useMemo(() => channel && coupleMessages(channel.messages), [channel, updateCount]);
 
   return (
     <section ref={messagesRef} onScroll={onScroll} className="flex-grow gap-4 flex flex-col overflow-y-auto custom_scrollbar mr-1 mt-1">
@@ -317,10 +331,10 @@ const Messages = ({ channel }: { channel?: Channel | null }) => {
         <section key={k}>
           {messages.map((message, i) => {
             if (i === 0) {
-              return (<MessageEntry key={message.id} message={message} channel={channel} />);
+              return (<MessageEntry editingMessage={editingMessage} key={message.id} message={message} channel={channel} />);
             }
 
-            return <HeadlessMessageEntry key={message.id} message={message} channel={channel} />;
+            return <HeadlessMessageEntry editingMessage={editingMessage} key={message.id} message={message} channel={channel} />;
           })}
         </section>
       ))}

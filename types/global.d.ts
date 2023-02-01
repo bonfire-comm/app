@@ -86,6 +86,19 @@ declare global {
     attachments?: ChannelMessageAttachmentData[] | null;
   }
 
+  interface EmbedData {
+    author: string | null;
+    description: string | null;
+    image: string | null;
+    logo: string | null;
+    title: string | null;
+    url: string | null;
+    publisher?: string;
+    color: string | null;
+    audio?: string | null;
+    date?: Date | null;
+  }
+
   type ChannelEventTypes = {
     message: (message: Message) => void;
     [k: `message-${string}`]: (message: Message) => void;
