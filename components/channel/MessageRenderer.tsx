@@ -16,6 +16,7 @@ import { lowlight } from 'lowlight';
 import { DateTime } from 'luxon';
 import { useReducer, createRef, useEffect, useLayoutEffect, useRef, UIEventHandler, RefObject, useState, useMemo, memo } from 'react';
 import { useAsync } from 'react-use';
+import { uniq } from 'lodash-es';
 import Embed from '../Embed';
 
 const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentData}) => {
@@ -128,8 +129,8 @@ const EmbedRenderer = memo(({ content, contentRef }: { content: string; contentR
     (async () => {
       if (!contentRef.current) return;
 
-      const els = [...contentRef.current.querySelectorAll('a')];
-      const all = (await Promise.all(els.map((el) => fetchEmbed(el.href, cancel.signal)))).filter(Boolean) as EmbedData[];
+      const links = uniq([...contentRef.current.querySelectorAll('a')].map((el) => el.href));
+      const all = (await Promise.all(links.map((link) => fetchEmbed(link, cancel.signal)))).filter(Boolean) as EmbedData[];
 
       setEmbeds(all);
     })();
