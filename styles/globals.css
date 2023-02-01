@@ -15,11 +15,15 @@ code {
 }
 
 .user_message {
-  @apply flex flex-col gap-2;
+  @apply flex flex-col gap-2 flex-grow-0;
 }
 
 .user_message pre, .editor pre {
   @apply rounded-lg w-full;
+}
+
+.user_message pre code {
+  @apply whitespace-pre-wrap;
 }
 
 .user_message ol, .editor ol {

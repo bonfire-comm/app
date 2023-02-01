@@ -140,7 +140,7 @@ const EmbedRenderer = memo(({ content, contentRef }: { content: string; contentR
   const memoizedEmbeds = useMemo(() => embeds, [embeds]);
 
   return (
-    <section className="mt-1">
+    <section className="mt-1 flex flex-col gap-3">
       {memoizedEmbeds.map((v, i) => (<Embed data={v} key={i} />))}
     </section>
   );
@@ -151,6 +151,7 @@ EmbedRenderer.displayName = 'EmbedRenderer';
 const MessageEntry = memo(({ message, channel, editingMessage }: { message: Message; channel: Channel; editingMessage?: Message | null }) => {
   const [val, forceUpdate] = useReducer((v) => v + 1, 0);
   const contentRef = createRef<HTMLDivElement>();
+  const createdTime = useMemo(() => DateTime.fromJSDate(message.createdAt), [message]);
 
   useEffect(() => {
     const listener = () => forceUpdate();
@@ -183,9 +184,16 @@ const MessageEntry = memo(({ message, channel, editingMessage }: { message: Mess
 
           {message.createdAt && (
             <p className="text-cloudy-300 text-sm">
-              <span className="capitalize">{DateTime.fromJSDate(message.createdAt).toRelativeCalendar()}</span>
-              {' at '}
-              <span className="capitalize">{DateTime.fromJSDate(message.createdAt).toFormat('HH:mm')}</span>
+              {DateTime.local().diff(createdTime, 'days').days < 1
+                ? (
+                  <>
+                    <span className="capitalize">{createdTime.toRelativeCalendar()}</span>
+                    {' at '}
+                  </>
+                )
+                : `${createdTime.toLocaleString(DateTime.DATE_SHORT) } `
+              }
+              <span className="capitalize">{createdTime.toLocaleString(DateTime.TIME_SIMPLE)}</span>
             </p>
           )}
         </section>
@@ -213,6 +221,7 @@ MessageEntry.displayName = 'MessageEntry';
 const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { message: Message; channel: Channel; editingMessage?: Message | null }) => {
   const [val, forceUpdate] = useReducer((v) => v + 1, 0);
   const contentRef = createRef<HTMLDivElement>();
+  const createdTime = useMemo(() => DateTime.fromJSDate(message.createdAt), [message]);
 
   useEffect(() => {
     const listener = () => forceUpdate();
@@ -236,7 +245,7 @@ const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { messa
       <ActionPopOver message={message} />
 
       <section className="w-12 flex items-center justify-center h-full select-none">
-        <p className="text-xs text-cloudy-400 hidden group-hover:block">{DateTime.fromJSDate(message.createdAt).toFormat('HH:mm')}</p>
+        <p className="text-xs text-cloudy-400 hidden group-hover:block">{createdTime.toLocaleString(DateTime.TIME_SIMPLE)}</p>
       </section>
 
       <section className="flex-grow">
