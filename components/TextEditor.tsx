@@ -27,6 +27,7 @@ import rustLanguageSyntax from 'highlight.js/lib/languages/rust';
 import dockerLanguageSyntax from 'highlight.js/lib/languages/dockerfile';
 import goLanguageSyntax from 'highlight.js/lib/languages/go';
 import xmlLanguageSyntax from 'highlight.js/lib/languages/xml';
+import dartLanguageSyntax from 'highlight.js/lib/languages/dart';
 
 lowlight.registerLanguage('typescript', tsLanguageSyntax);
 lowlight.registerLanguage('javascript', jsLanguageSyntax);
@@ -42,6 +43,7 @@ lowlight.registerLanguage('arduino', arduinoLanguageSyntax);
 lowlight.registerLanguage('rust', rustLanguageSyntax);
 lowlight.registerLanguage('docker', dockerLanguageSyntax);
 lowlight.registerLanguage('go', goLanguageSyntax);
+lowlight.registerLanguage('dart', dartLanguageSyntax);
 
 lowlight.registerAlias({
   'cpp': ['c++'],
@@ -57,6 +59,8 @@ lowlight.registerAlias({
   'bash': ['sh'],
   'arduino': ['ino'],
 });
+
+export const lowlightInstance = lowlight;
 
 interface Props {
   content: string;

@@ -11,12 +11,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Tooltip } from '@mantine/core';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
 import { useClipboard } from '@mantine/hooks';
-import { toHtml } from 'hast-util-to-html';
-import { lowlight } from 'lowlight';
 import { DateTime } from 'luxon';
 import { useReducer, createRef, useEffect, useLayoutEffect, useRef, UIEventHandler, RefObject, useState, useMemo, memo } from 'react';
 import { useAsync } from 'react-use';
 import { uniq } from 'lodash-es';
+import highlightElement from '@/lib/helpers/highlightElement';
 import Embed from '../Embed';
 
 const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentData}) => {
@@ -168,17 +167,7 @@ const MessageEntry = memo(({ message, channel, editingMessage }: { message: Mess
   useLayoutEffect(() => {
     if (contentRef.current && message) {
       contentRef.current.innerHTML = message.content;
-
-      const els = contentRef.current.querySelectorAll<HTMLElement>('pre code');
-      els.forEach((el) => {
-        const lang = el.className.split('-')[1];
-        const tree = lowlight.highlight(lang, el.innerHTML.trim());
-        const html = toHtml(tree);
-
-        el.classList.add('hljs');
-        // eslint-disable-next-line no-param-reassign
-        el.innerHTML = html;
-      });
+      highlightElement(contentRef.current);
     }
   }, [message, contentRef, val]);
 
@@ -238,17 +227,7 @@ const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { messa
   useLayoutEffect(() => {
     if (contentRef.current && message) {
       contentRef.current.innerHTML = message.content;
-
-      const els = contentRef.current.querySelectorAll<HTMLElement>('pre code');
-      els.forEach((el) => {
-        const lang = el.className.split('-')[1];
-        const tree = lowlight.highlight(lang, el.innerHTML.trim());
-        const html = toHtml(tree);
-
-        el.classList.add('hljs');
-        // eslint-disable-next-line no-param-reassign
-        el.innerHTML = html;
-      });
+      highlightElement(contentRef.current);
     }
   }, [message, contentRef, val]);
 
@@ -260,7 +239,7 @@ const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { messa
         <p className="text-xs text-cloudy-400 hidden group-hover:block">{DateTime.fromJSDate(message.createdAt).toFormat('HH:mm')}</p>
       </section>
 
-      <section>
+      <section className="flex-grow">
         <section>
           <section
             ref={contentRef}
