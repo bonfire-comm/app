@@ -341,7 +341,7 @@ export default class UserManager {
     return instance;
   }
 
-  async updateUser(data: Partial<Omit<UserData, 'image'> & { image?: File | Blob | null }>) {
+  async updateUser(data: Partial<Omit<UserData, 'image'> & { image?: File | Blob | null | string }>) {
     if (!this.client.auth.currentUser) {
       throw new Error('No user logged in');
     }
@@ -350,7 +350,8 @@ export default class UserManager {
     const finalData = { ...data } as Omit<UserData, 'image'> & { image?: File | Blob | string | null };
 
     if (data.image) {
-      finalData.image = await this.uploadProfilePicture(data.image);
+      if (typeof data.image !== 'string') finalData.image = await this.uploadProfilePicture(data.image);
+      else finalData.image = data.image;
     }
 
     await updateDoc(doc(this.client.firestore, 'users', uid), {

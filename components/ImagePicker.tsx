@@ -20,9 +20,10 @@ interface Props extends Omit<ReactCropProps, 'onChange'> {
   onChange?: (image: File) => void;
   onCrop?: (crop: Crop) => void;
   onPick?: (image: File | Blob | null) => void;
+  onCropping?: () => void;
 }
 
-export default function ImagePicker({ src: initialSrc, enableCropping, onChange = noop, onCrop = noop, onPick = noop, ...props }: Props) {
+export default function ImagePicker({ src: initialSrc, onCropping = noop, enableCropping, onChange = noop, onCrop = noop, onPick = noop, ...props }: Props) {
   const [isDirty, setDirty] = useToggle();
   const [src, setSrc] = useState<string | null | undefined>(null);
 
@@ -46,6 +47,10 @@ export default function ImagePicker({ src: initialSrc, enableCropping, onChange 
   }, [selected]);
 
   const imageRef = createRef<HTMLImageElement>();
+
+  useEffect(() => {
+    if (selectedUri && enableCropping && !cropped) onCropping();
+  }, [cropped, enableCropping, onCropping, selectedUri]);
 
   const processCrop = () => {
     if (cropped) return;

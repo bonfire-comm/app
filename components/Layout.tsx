@@ -1,5 +1,5 @@
 import firebaseClient from '@/lib/firebase';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
 import { ActionIcon, Button, Divider, Input, Menu, TextInput } from '@mantine/core';
@@ -12,7 +12,6 @@ import { useForm } from '@mantine/form';
 import bigButtonClass from '@/lib/helpers/bigButtonClass';
 import { useToggle } from '@mantine/hooks';
 import trimEmptyParagraphTag from '@/lib/helpers/trimEmptyParagraphTag';
-import { isEmpty, omitBy } from 'lodash-es';
 import Logo from './Logo';
 import Twemoji from './Twemoji';
 import NavLink from './NavLink';
@@ -29,28 +28,26 @@ interface Props {
 const ChangeProfileModalContent = () => {
   const user = useUser();
   const [loading, setLoading] = useToggle();
+  const [disabled, setDisabled] = useState(false);
   const form = useForm({
     initialValues: {
-      image: null as File | Blob | null,
+      image: user?.image as File | Blob | string | null | undefined,
       name: user?.name,
       about: user?.about,
     }
   });
 
   useEffect(() => {
+    form.setFieldValue('image', user?.image);
     form.setFieldValue('name', user?.name);
     form.setFieldValue('about', user?.about);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const onSubmit = form.onSubmit(async (values) => {
-    const changedValues = omitBy(values, isEmpty);
-
-    if (isEmpty(changedValues)) return;
-
     setLoading(true);
 
-    await firebaseClient.managers.user.updateUser(changedValues);
+    await firebaseClient.managers.user.updateUser(values);
 
     closeModal('edit-profile');
   });
@@ -62,7 +59,17 @@ const ChangeProfileModalContent = () => {
       <section className="flex-grow w-1/2 flex flex-col">
         <h3 className="font-extrabold text-sm text-cloudy-300 mb-2">PROFILE PICTURE</h3>
 
-        <ImagePicker src={user.image} enableCropping aspect={1} circularCrop onPick={(img) => form.setFieldValue('image', img)} />
+        <ImagePicker
+          src={user.image}
+          enableCropping
+          aspect={1}
+          circularCrop
+          onCropping={() => setDisabled(true)}
+          onPick={(img) => {
+            form.setFieldValue('image', img);
+            setDisabled(false);
+          }}
+        />
       </section>
 
       <section className="flex-grow w-1/2 flex flex-col">
@@ -96,7 +103,7 @@ const ChangeProfileModalContent = () => {
           </section>
         </section>
 
-        <Button classNames={{ root: bigButtonClass() }} type="submit" loading={loading}>Continue</Button>
+        <Button disabled={disabled} classNames={{ root: bigButtonClass() }} type="submit" loading={loading}>Continue</Button>
       </section>
     </form>
   );
