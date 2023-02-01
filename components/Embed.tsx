@@ -2,11 +2,14 @@
 import { ReactNode } from 'react';
 import YouTube from 'react-youtube';
 
+const YOUTUBE_ID_REGEX = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+
 export const EmbedMediaPreview = ({ data }: { data: EmbedData}) => {
   const Container = ({ children }: { children: ReactNode }) => <section className="mt-2 rounded-lg overflow-hidden">{children}</section>;
 
   if (data.publisher === 'YouTube') {
-    const id = data.url?.split('v=')[1];
+    const matched = data.url?.match(YOUTUBE_ID_REGEX);
+    const id = matched && matched[2];
     if (!id) return null;
 
     return (
