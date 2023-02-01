@@ -260,18 +260,20 @@ const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { messa
       </section>
 
       <section>
-        <section
-          ref={contentRef}
-          className="user_message break-all whitespace-pre-line"
-          dangerouslySetInnerHTML={{ __html: message.content }}
-        />
+        <section>
+          <section
+            ref={contentRef}
+            className="user_message break-all whitespace-pre-line"
+            dangerouslySetInnerHTML={{ __html: message.content }}
+          />
 
-        {message.editedAt && <EditedMark editedAt={message.editedAt} />}
+          {message.editedAt && <EditedMark editedAt={message.editedAt} />}
+        </section>
+
+        <EmbedRenderer contentRef={contentRef} content={message.content} />
+
+        {message.attachments?.length && <Attachments attachments={message.attachments} />}
       </section>
-
-      <EmbedRenderer contentRef={contentRef} content={message.content} />
-
-      {message.attachments?.length && <Attachments attachments={message.attachments} />}
     </section>
   );
 });
