@@ -16,6 +16,7 @@ import { useReducer, createRef, useEffect, useLayoutEffect, useRef, UIEventHandl
 import { useAsync } from 'react-use';
 import { uniq } from 'lodash-es';
 import highlightElement from '@/lib/helpers/highlightElement';
+import openProfileModal from '@/lib/helpers/openProfileModal';
 import Embed from '../Embed';
 
 const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentData}) => {
@@ -163,7 +164,13 @@ const MessageEntry = memo(({ message, channel, editingMessage }: { message: Mess
     };
   }, [message, channel]);
 
-  const user = useAsync(() => firebaseClient.managers.user.fetch(message.author), [message.author]);
+  const user = useAsync(() => firebaseClient.managers.user.fetch(message.author), [message]);
+
+  const openProfile = () => {
+    if (user.value) {
+      openProfileModal(user.value);
+    }
+  };
 
   useLayoutEffect(() => {
     if (contentRef.current && message) {
@@ -176,11 +183,11 @@ const MessageEntry = memo(({ message, channel, editingMessage }: { message: Mess
     <section id={message.id} className={['group relative px-6 py-1 flex items-start gap-4', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
       <ActionPopOver message={message} />
 
-      <img src={user.value?.image} alt="" className="w-12 rounded-full" />
+      <img onClick={openProfile} src={user.value?.image} alt="" className="w-12 rounded-full cursor-pointer" />
 
       <section className="flex-grow">
         <section className="flex gap-3 items-end mb-[2px]">
-          <h3 className="font-extrabold">{user.value?.name}</h3>
+          <h3 onClick={openProfile} className="font-extrabold hover:underline hover:underline-offset-1 cursor-pointer">{user.value?.name}</h3>
 
           {message.createdAt && (
             <p className="text-cloudy-300 text-sm">

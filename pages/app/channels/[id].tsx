@@ -85,6 +85,12 @@ const CharacterCounter = ({ editor, forceUpdateRef }: { editor: MutableRefObject
   );
 };
 
+const Header = ({ channel }: { channel?: Channel | null }) => (
+  <section className="flex px-6 items-center h-full w-full">
+    {channel?.isDM ? <DMInnerHeader channel={channel} /> : <InnerHeader channel={channel} />}
+  </section>
+);
+
 const ACTION_ICON_CLASS_NAME = 'cursor-pointer h-full grid place-items-center text-cloudy-300 hover:text-cloudy-50 hover:bg-cloudy-600 hover:bg-opacity-50 transition-colors duration-100 px-4';
 
 export default function ChannelPage() {
@@ -240,11 +246,7 @@ export default function ChannelPage() {
 
   return (
     <Layout
-      innerHeader={
-        <section className="flex px-6 items-center h-full w-full">
-          {channel?.isDM ? <DMInnerHeader channel={channel} /> : <InnerHeader channel={channel} />}
-        </section>
-      }
+      innerHeader={<Header channel={channel} />}
     >
       <DropArea onDrop={onAttachment} openRef={openRef} />
 

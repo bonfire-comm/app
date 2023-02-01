@@ -2,6 +2,8 @@ import EventEmitter from 'eventemitter3';
 import { doc, getDoc } from 'firebase/firestore';
 import type UserManager from '../managers/user';
 import BaseStruct from './base';
+import useBuddies from '../store/buddies';
+import useUser from '../store/user';
 
 export type UserEventTypes = {
   // eslint-disable-next-line no-use-before-define
@@ -54,7 +56,7 @@ export default class User extends BaseStruct implements UserOptions {
   }
 
   async fetch() {
-    this.manager.fetch(this.id, true);
+    return this.manager.fetch(this.id, true);
   }
 
   async fetchBuddies(cached = true) {
@@ -65,6 +67,18 @@ export default class User extends BaseStruct implements UserOptions {
     this.buddies = data;
 
     return data;
+  }
+
+  get isFriend() {
+    const buddies = useBuddies.getState();
+
+    return buddies.added.includes(this.id);
+  }
+
+  get isSelf() {
+    const user = useUser.getState();
+
+    return this.id === user?.id;
   }
 
   emitChanged() {
