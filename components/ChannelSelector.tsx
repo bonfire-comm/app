@@ -67,10 +67,12 @@ const Preview = ({ channel }: PreviewProps) => {
 
 export default function ChannelSelector() {
   const forceRender = useForceUpdate();
-  const channels = [...firebaseClient.managers.channels.cache.values()];
+  const channels = [...firebaseClient.managers.channels.cache.values()].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
   useEffect(() => {
-    const handler = () => forceRender();
+    const handler = () => {
+      forceRender();
+    };
 
     firebaseClient.managers.channels.cache.events.on('changed', handler);
     firebaseClient.managers.channels.cache.events.on('set', handler);

@@ -9,10 +9,10 @@ import Channel from '@/lib/classes/channel';
 import firebaseClient from '@/lib/firebase';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 import useUser from '@/lib/store/user';
-import { faAt, faPaperPlane, faPlusCircle, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faAt, faPaperPlane, faPlus, faPlusCircle, faUser } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
-import { useForceUpdate, useWindowEvent } from '@mantine/hooks';
+import { useClipboard, useForceUpdate, useWindowEvent } from '@mantine/hooks';
 import type { Editor } from '@tiptap/core';
 import { useRouter } from 'next/router';
 import { MutableRefObject, useEffect, useRef, useState } from 'react';
@@ -89,8 +89,12 @@ const InnerHeader = ({ channel }: { channel?: Channel | null }) => (
   <>
     <Meta page={`${channel?.name}'s chat`} />
 
-    <section className="flex gap-3 items-center">
-      <h2 className="font-extrabold text-lg">{channel?.name}</h2>
+    <section className="flex justify-between items-center flex-grow">
+      <section className="flex gap-3 items-center">
+        <h2 className="font-extrabold text-lg">{channel?.name}</h2>
+      </section>
+
+      <ToggleShowParticipant />
     </section>
   </>
 );
@@ -121,15 +125,60 @@ const Header = ({ channel }: { channel?: Channel | null }) => (
 );
 
 const ParticipantList = ({ channel }: { channel: Channel | null }) => {
+  const clipboard = useClipboard({ timeout: 2000 });
   const users = useAsync(async () => {
     if (!channel) return [];
 
     return (await Promise.all(Object.keys(channel?.participants).map((id) => firebaseClient.managers.user.fetch(id)))).filter(Boolean) as User[];
   }, [channel]);
 
+  const createInvite = async () => {
+    if (!channel) return;
+
+    const invite = await channel.createInvite();
+    if (!invite) return;
+
+    clipboard.copy(`${window.location.origin}/invite/${invite.id}`);
+    showNotification({
+      color: 'green',
+      title: <Twemoji>📋 Copied!</Twemoji>,
+      message: 'Invite copied to clipboard'
+    });
+  };
+
   return (
     <section className="flex-shrink-0 w-72 bg-cloudy-700 p-4 flex flex-col gap-1 overflow-y-auto">
-      {users.value && users.value.map((u) => <UserList enableClick onClick={() => openProfileModal(u)} key={u.id} user={u} barebone avatarSize={38} />)}
+      <section className="flex justify-between px-3 my-2 items-center gap-4">
+        <h3 className="font-extrabold text-sm text-cloudy-300">PARTICIPANTS</h3>
+
+        {!channel?.isDM && (
+          <Tooltip
+            label="Add participant"
+            color="blue"
+            withArrow
+            arrowSize={6}
+            offset={8}
+          >
+            <FontAwesomeIcon
+              icon={faPlus}
+              className="cursor-pointer"
+              onClick={createInvite}
+            />
+          </Tooltip>
+        )}
+      </section>
+
+      {users.value && users.value.map((u) => (
+        <UserList
+          key={u.id}
+          enableClick
+          onClick={() => openProfileModal(u)}
+          user={u}
+          barebone
+          avatarSize={38}
+          showCrown={u.id === channel?.owner}
+        />
+      ))}
     </section>
   );
 };

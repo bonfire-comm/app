@@ -2,12 +2,13 @@ import firebaseClient from '@/lib/firebase';
 import { ReactNode } from 'react';
 import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
-import { ActionIcon, Divider, Menu } from '@mantine/core';
+import { ActionIcon, Divider, Menu, Tooltip } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEllipsisV, faPencil, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import { faEllipsisV, faPencil, faPlus, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
 import CookieSetterBuilder from '@/lib/managers/cookie';
 import openEditProfileModal from '@/lib/helpers/openEditProfileModal';
+import openCreateChannelModal from '@/lib/helpers/openCreateChannelModal';
 import Logo from './Logo';
 import Twemoji from './Twemoji';
 import NavLink from './NavLink';
@@ -100,7 +101,23 @@ export default function Layout({ children, innerHeader = (<section></section>) }
               <p className="text-lg font-bold text-white">Music</p>
             </NavLink>
 
-            <Divider className="my-2 w-1/2 mx-auto" />
+            <section className="flex justify-between px-3 my-2 items-center gap-4">
+              <Divider className="w-full" />
+
+              <Tooltip
+                label="Create Channel"
+                color="blue"
+                withArrow
+                arrowSize={6}
+                offset={8}
+              >
+                <FontAwesomeIcon
+                  icon={faPlus}
+                  className="cursor-pointer"
+                  onClick={openCreateChannelModal}
+                />
+              </Tooltip>
+            </section>
 
             <ChannelSelector />
           </section>

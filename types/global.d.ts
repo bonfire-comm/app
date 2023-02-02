@@ -70,6 +70,15 @@ declare global {
     voice: ChannelVoiceData;
   }
 
+  interface ChannelInviteData {
+    id: string;
+    uses: number;
+    maxUses?: number;
+    createdAt: Date;
+    channelId: string;
+    createdBy: string;
+  }
+
   interface ChannelMessageAttachmentData {
     name: string;
     url: string;

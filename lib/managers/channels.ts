@@ -73,6 +73,29 @@ export default class ChannelManager {
     };
   }
 
+  async fetchInvite(phrase: string) {
+    const docRef = doc(firebaseClient.firestore, `invites/${phrase}`);
+    const data = await getDoc(docRef);
+
+    if (!data.exists()) return;
+
+    return data.data() as ChannelInviteData;
+  }
+
+  async acceptInvite(phrase: string) {
+    if (!this.client.auth.currentUser) return;
+
+    const invite = await this.fetchInvite(phrase);
+    if (!invite) return;
+
+    const channel = await this.fetch(invite.channelId);
+    if (!channel) return;
+
+    await channel.addParticipant(this.client.auth.currentUser.uid)?.commit();
+
+    return channel;
+  }
+
   async fetch(id: string, force = false) {
     if (!force && this.cache.has(id)) {
       return this.cache.get(id);
@@ -88,23 +111,19 @@ export default class ChannelManager {
     return channel;
   }
 
-  async create(data: Omit<ChannelData, 'id'>) {
-    const id = generateId();
-    const docRef = doc(firebaseClient.firestore, 'channels', id);
-    const participantsRef = ref(firebaseClient.rtdb, `channels/${id}/participants`);
+  async create(data: Omit<ChannelData, 'id'> & Partial<Pick<ChannelData, 'id'>>) {
+    // eslint-disable-next-line no-param-reassign
+    if (!data.id) data.id = generateId();
+
+    const docRef = doc(firebaseClient.firestore, 'channels', data.id);
+    const participantsRef = ref(firebaseClient.rtdb, `channels/${data.id}/participants`);
 
     await Promise.all([
-      setDoc(docRef, {
-        id,
-        ...data
-      }),
+      setDoc(docRef, data),
       set(participantsRef, data.participants)
     ]);
 
-    return {
-      id,
-      ...data
-    } as ChannelData;
+    return data as ChannelData;
   }
 
   async createDM(otherUserId: string) {

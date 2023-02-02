@@ -1,6 +1,6 @@
 import User from '@/lib/classes/user';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faEllipsis, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faCrown, faEllipsis, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { ActionIcon, Menu } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import firebaseClient from '@/lib/firebase';
@@ -22,6 +22,7 @@ interface Props {
   indicatorSize?: number;
   enableClick?: boolean;
   onClick?: () => void;
+  showCrown?: boolean;
 }
 
 const UserList = (({
@@ -32,7 +33,8 @@ const UserList = (({
   avatarSize,
   indicatorSize,
   enableClick = false,
-  onClick = noop
+  onClick = noop,
+  showCrown = false
 }: Props) => {
   const [added, blocked] = useBuddies((state) => [state.added, state.blocked], shallow);
   const clipboard = useClipboard({ timeout: 500 });
@@ -104,6 +106,14 @@ const UserList = (({
             <h3 className="font-extrabold text-lg flex gap-1 items-center">
               {user.name}
               <span className="font-medium opacity-75 text-base">#{user.discriminator}</span>
+
+              {showCrown && (
+                <FontAwesomeIcon
+                  icon={faCrown}
+                  className="text-yellow-400 ml-2"
+                  size="xs"
+                />
+              )}
             </h3>
             <p className="font-semibold text-cloudy-200 text-sm">{user.activity?.text ?? <span className="capitalize">{user.status}</span>}</p>
           </section>

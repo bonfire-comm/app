@@ -62,6 +62,12 @@ export default function App({ Component, pageProps, router }: AppProps) {
               input: 'border-none rounded-xl h-auto py-2 px-5 font-medium'
             }
           },
+          MultiSelect: {
+            classNames: {
+              input: 'border-none rounded-xl h-auto py-2 px-3 font-medium',
+              defaultValue: 'rounded-xl'
+            }
+          },
           Button: {
             defaultProps: {
               loaderProps: {

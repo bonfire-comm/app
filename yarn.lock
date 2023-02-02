@@ -5961,6 +5961,11 @@ quick-lru@^5.1.1:
   resolved "https://registry.yarnpkg.com/quick-lru/-/quick-lru-5.1.1.tgz#366493e6b3e42a3a6885e2e99d18f80fb7a8c932"
   integrity sha512-WuyALRjWPDGtt/wzJiadO5AXY+8hZ80hVpe6MyivgraREW751X3SbhRvG3eLKOYN+8VEvqLcf3wdnt44Z4S4SA==
 
+random-words@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/random-words/-/random-words-1.2.1.tgz#118d164cc4c5688b161b7960a8239661043f2dee"
+  integrity sha512-LG7ejRI9bhOeJ9+Rde4nRyCgdpfmC6vDZU/KlWdvWfMhK88aEWyl6f8qkLxlgO/qvWAXanhhulzQBZT8uDApCA==
+
 re2@~1.18.0:
   version "1.18.0"
   resolved "https://registry.yarnpkg.com/re2/-/re2-1.18.0.tgz#6d6f47c5aaa436eb7a7d68b260f8cf25d7948619"

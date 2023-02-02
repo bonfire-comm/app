@@ -1,7 +1,8 @@
 import EventEmitter from 'eventemitter3';
-import { clone, isEqual, noop, pick } from 'lodash-es';
+import { clone, isEqual, noop } from 'lodash-es';
 import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, serverTimestamp, set, update } from 'firebase/database';
-import { doc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, query as firestoreQuery, setDoc, updateDoc, where } from 'firebase/firestore';
+import randomWords from 'random-words';
 import BaseStruct from './base';
 import firebaseClient from '../firebase';
 import type ChannelManager from '../managers/channels';
@@ -315,25 +316,61 @@ export default class Channel extends BaseStruct implements ChannelData {
     return this;
   }
 
+  async createInvite() {
+    if (!firebaseClient.auth.currentUser) return;
+
+    const existings = await getDocs(firestoreQuery(collection(firebaseClient.firestore, 'invites'), where('channelId', '==', this.id), where('createdBy', '==', firebaseClient.auth.currentUser.uid)));
+    if (!existings.empty) {
+      const first = existings.docs[0].data() as ChannelInviteData;
+      return first;
+    }
+
+    const phrase = randomWords({ exactly: 5, join: '-' });
+
+    const docRef = doc(firebaseClient.firestore, `invites/${phrase}`);
+    const data: ChannelInviteData = {
+      id: phrase,
+      uses: 0,
+      channelId: this.id,
+      createdAt: new Date(),
+      createdBy: firebaseClient.auth.currentUser.uid
+    };
+
+    await setDoc(docRef, data);
+
+    return data;
+  }
+
+  async revokeInvite(phrase: string) {
+    const docRef = doc(firebaseClient.firestore, `invites/${phrase}`);
+
+    await deleteDoc(docRef);
+  }
+
+  async fetchInvites() {
+    const q = firestoreQuery(collection(firebaseClient.firestore, 'invites'), where('channelId', '==', this.id));
+    const snap = await getDocs(q);
+
+    return snap.docs.map((d) => d.data() as ChannelInviteData);
+  }
+
   async commit() {
     const docRef = doc(firebaseClient.firestore, 'channels', this.id);
     const participantsRef = ref(firebaseClient.rtdb, `channels/${this.id}/participants`);
 
     await Promise.all([
       update(participantsRef, this.participants),
-      updateDoc(docRef, pick<ChannelData>(this, [
-        'id',
-        'name',
-        'image',
-        'description',
-        'participants',
-        'pins',
-        'createdAt',
-        'voice',
-        'isDM',
-        'owner',
-        'bans'
-      ]))
+      updateDoc(docRef, {
+        name: this.name,
+        image: this.image ?? null,
+        description: this.description ?? null,
+        participants: this.participants,
+        pins: this.pins,
+        voice: this.voice,
+        isDM: this.isDM,
+        owner: this.owner ?? null,
+        bans: this.bans
+      })
     ]);
   }
 

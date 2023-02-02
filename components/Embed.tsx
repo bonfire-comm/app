@@ -53,7 +53,7 @@ export default function Embed({ data }: { data: EmbedData }) {
             {data.description && <p>{data.description}</p>}
           </section>
 
-          {data.logo && <img className="w-8 h-auto" src={data.logo} alt="" />}
+          {data.logo && <img className="w-8 h-auto rounded-md" src={data.logo} alt="" />}
         </section>
 
         <EmbedMediaPreview data={data} />
