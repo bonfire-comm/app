@@ -1,11 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 import firebaseClient from '@/lib/firebase';
 import { useForceUpdate } from '@mantine/hooks';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Channel from '@/lib/classes/channel';
-import { useAsync } from 'react-use';
 import getInitials from '@/lib/helpers/getInitials';
 import { Avatar } from '@mantine/core';
+import User from '@/lib/classes/user';
 import NavLink from './NavLink';
 import UserList from './UserList';
 
@@ -14,13 +14,34 @@ interface PreviewProps {
 }
 
 const DMPreview = ({ channel }: PreviewProps) => {
-  const user = useAsync(() => channel.getUser(), [channel]);
+  const forceUpdate = useForceUpdate();
+  const [user, setUser] = useState<User | undefined>();
 
-  if (user.loading || !user.value) return null;
+  useEffect(() => {
+    if (!user) return;
+
+    const handler = () => forceUpdate();
+
+    user.events.on('changed', handler);
+
+    return () => {
+      user.events.off('changed', handler);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    (async () => {
+      const u = await channel.getUser();
+      setUser(u);
+    })();
+  }, [channel]);
+
+  if (!user) return null;
 
   return (
     <section className="flex gap-3 items-center">
-      <UserList user={user.value} barebone avatarSize={38} />
+      <UserList user={user} barebone avatarSize={38} />
     </section>
   );
 };
