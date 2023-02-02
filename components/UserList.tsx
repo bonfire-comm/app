@@ -9,6 +9,7 @@ import { shallow } from 'zustand/shallow';
 import useBuddies from '@/lib/store/buddies';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { noop } from '@mantine/utils';
 import AvatarWithStatus from './AvatarWithStatus';
 import Twemoji from './Twemoji';
 
@@ -19,9 +20,20 @@ interface Props {
   barebone?: boolean;
   avatarSize?: number;
   indicatorSize?: number;
+  enableClick?: boolean;
+  onClick?: () => void;
 }
 
-export default function UserList({ user, showAccept, enableMenu = true, barebone, avatarSize, indicatorSize }: Props) {
+export default function UserList({
+  user,
+  showAccept,
+  enableMenu = true,
+  barebone,
+  avatarSize,
+  indicatorSize,
+  enableClick = false,
+  onClick = noop
+}: Props) {
   const [added, blocked] = useBuddies((state) => [state.added, state.blocked], shallow);
   const clipboard = useClipboard({ timeout: 500 });
   const forceRender = useForceUpdate();
@@ -83,7 +95,7 @@ export default function UserList({ user, showAccept, enableMenu = true, barebone
 
   if (barebone) {
     return (
-      <section className="flex">
+      <section onClick={onClick} className={`flex select-none ${enableClick ? 'hover:bg-cloudy-800 hover:bg-opacity-50 cursor-pointer px-3 py-2 rounded-xl' : ''}`}>
         <section className="flex gap-4 items-center">
           <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={user.image} status={user.status} />
 
@@ -100,7 +112,7 @@ export default function UserList({ user, showAccept, enableMenu = true, barebone
   }
 
   return (
-    <section className="p-4 bg-cloudy-500 rounded-lg flex bg-opacity-80 justify-between items-center gap-4">
+    <section className="select-none p-4 bg-cloudy-500 rounded-lg flex bg-opacity-80 justify-between items-center gap-4">
       <section className="flex gap-4 items-center">
         <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={user.image} status={user.status} />
 

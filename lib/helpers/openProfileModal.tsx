@@ -3,7 +3,7 @@ import { openModal } from '@mantine/modals';
 import { ActionIcon, Input, Tooltip } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faICursor, faPencil, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
 import { useRouter } from 'next/router';
 import User from '../classes/user';
@@ -12,7 +12,13 @@ import getSignificantColor from './getSignificantColor';
 import firebaseClient from '../firebase';
 import openEditProfileModal from './openEditProfileModal';
 
-const ProfileModalContent = ({ user, bannerColor = 'rgb(41, 58, 60)' }: { user: User; bannerColor?: string; tone?: 'light' | 'dark' }) => {
+const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { user: User; bannerColor?: string; tone?: 'light' | 'dark' }) => {
+  const [user, setUser] = useState(u);
+
+  useEffect(() => {
+    u.fetch().then((uRes) => uRes && setUser(uRes));
+  }, [u]);
+
   const contentRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const createdDate = DateTime.fromJSDate(user.createdAt);
@@ -107,13 +113,11 @@ const ProfileModalContent = ({ user, bannerColor = 'rgb(41, 58, 60)' }: { user: 
 };
 
 export default async function openProfileModal(user: User) {
-  const fetched = await user.fetch();
-  if (!fetched) return;
   const bannerColor = await loadImage(user.image).then(getSignificantColor);
 
   openModal({
     centered: true,
-    children: <ProfileModalContent bannerColor={bannerColor.color} tone={bannerColor.tone} user={fetched} />,
+    children: <ProfileModalContent bannerColor={bannerColor.color} tone={bannerColor.tone} user={user} />,
     classNames: {
       modal: 'p-0 relative overflow-hidden rounded-lg',
       header: 'absolute top-0 left-0 right-0 w-full p-3',

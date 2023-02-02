@@ -9,7 +9,7 @@ import Channel from '@/lib/classes/channel';
 import firebaseClient from '@/lib/firebase';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 import useUser from '@/lib/store/user';
-import { faAt, faPaperPlane, faPlusCircle } from '@fortawesome/free-solid-svg-icons';
+import { faAt, faPaperPlane, faPlusCircle, faUser } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
 import { useForceUpdate, useWindowEvent } from '@mantine/hooks';
@@ -25,6 +25,23 @@ import { showNotification } from '@mantine/notifications';
 import Twemoji from '@/components/Twemoji';
 import trimEmptyParagraphTag from '@/lib/helpers/trimEmptyParagraphTag';
 import { noop } from 'lodash-es';
+import useInternal from '@/lib/store';
+import { shallow } from 'zustand/shallow';
+import User from '@/lib/classes/user';
+import UserList from '@/components/UserList';
+import openProfileModal from '@/lib/helpers/openProfileModal';
+
+const ToggleShowParticipant = () => {
+  const [show, setShow] = useInternal((s) => [s.showParticipants, s.setShowParticipants], shallow);
+
+  return (
+    <FontAwesomeIcon
+      icon={faUser}
+      className={`${show ? 'text-cloudy-100' : 'text-cloudy-300'} cursor-pointer`}
+      onClick={() => setShow(!show)}
+    />
+  );
+};
 
 const DMInnerHeader = ({ channel }: { channel: Channel }) => {
   const currentUserId = useUser((state) => state?.id);
@@ -43,14 +60,18 @@ const DMInnerHeader = ({ channel }: { channel: Channel }) => {
     <>
       <Meta page={`${user.value.name}'s chat`} />
 
-      <section className="flex gap-3 items-center">
-        <FontAwesomeIcon
-          icon={faAt}
-          size="lg"
-          className="text-cloudy-300"
-        />
+      <section className="flex justify-between items-center flex-grow">
+        <section className="flex gap-3 items-center">
+          <FontAwesomeIcon
+            icon={faAt}
+            size="lg"
+            className="text-cloudy-300"
+          />
 
-        <h2 className="font-extrabold text-lg">{user.value.name}</h2>
+          <h2 className="font-extrabold text-lg">{user.value.name}</h2>
+        </section>
+
+        <ToggleShowParticipant />
       </section>
     </>
   );
@@ -91,6 +112,20 @@ const Header = ({ channel }: { channel?: Channel | null }) => (
   </section>
 );
 
+const ParticipantList = ({ channel }: { channel: Channel | null }) => {
+  const users = useAsync(async () => {
+    if (!channel) return [];
+
+    return (await Promise.all(Object.keys(channel?.participants).map((id) => firebaseClient.managers.user.fetch(id)))).filter(Boolean) as User[];
+  }, [channel]);
+
+  return (
+    <section className="flex-shrink-0 w-72 bg-cloudy-700 p-4 flex flex-col gap-1 overflow-y-auto">
+      {users.value && users.value.map((u) => <UserList enableClick onClick={() => openProfileModal(u)} key={u.id} user={u} barebone avatarSize={38} />)}
+    </section>
+  );
+};
+
 const ACTION_ICON_CLASS_NAME = 'cursor-pointer h-full grid place-items-center text-cloudy-300 hover:text-cloudy-50 hover:bg-cloudy-600 hover:bg-opacity-50 transition-colors duration-100 px-4';
 
 export default function ChannelPage() {
@@ -102,6 +137,7 @@ export default function ChannelPage() {
   const editMessage = useEditMessage();
   const openRef = useRef<() => void>(noop);
   const characterCountRender = useRef<() => void>(noop);
+  const showParticipants = useInternal((s) => s.showParticipants);
 
   // Channel cache
   useEffect(() => {
@@ -250,63 +286,67 @@ export default function ChannelPage() {
     >
       <DropArea onDrop={onAttachment} openRef={openRef} />
 
-      <section className="flex flex-col flex-grow overflow-hidden">
-        <Messages channel={channel} />
+      <section className="flex overflow-hidden">
+        <section className="flex flex-col flex-grow overflow-hidden">
+          <Messages channel={channel} />
 
-        {attachments.length > 0 && (
-          <Attachments loading={sending} onRemove={onAttachmentRemove} attachments={attachments} />
-        )}
-
-        <section className="flex-shrink-0 flex flex-col p-6 pt-4 min-h-[6rem] w-full">
-          {editMessage.editing && (
-            <section className="mb-2 flex gap-2 items-center">
-              <span className="text-cloudy-100 font-medium">Editing message</span>
-              <span onClick={() => {
-                useEditMessage.setState({ editing: false, message: null });
-                editorRef.current?.commands.clearContent();
-              }} className="text-blue-500 cursor-pointer">cancel</span>
-            </section>
+          {attachments.length > 0 && (
+            <Attachments loading={sending} onRemove={onAttachmentRemove} attachments={attachments} />
           )}
 
-          <section className="relative w-full mb-2">
-            <LoadingOverlay visible={sending} />
+          <section className="flex-shrink-0 flex flex-col p-6 pt-4 min-h-[6rem] w-full">
+            {editMessage.editing && (
+              <section className="mb-2 flex gap-2 items-center">
+                <span className="text-cloudy-100 font-medium">Editing message</span>
+                <span onClick={() => {
+                  useEditMessage.setState({ editing: false, message: null });
+                  editorRef.current?.commands.clearContent();
+                }} className="text-blue-500 cursor-pointer">cancel</span>
+              </section>
+            )}
 
-            <section
-              className="rounded-lg absolute top-[1px] right-[1px] bottom-[1px] z-10 flex"
-            >
-              <span onClick={() => openRef.current()} className={ACTION_ICON_CLASS_NAME}>
-                <FontAwesomeIcon
-                  icon={faPlusCircle}
-                  size="lg"
-                />
-              </span>
+            <section className="relative w-full mb-2">
+              <LoadingOverlay visible={sending} />
 
-              <span onClick={() => send()} className={ACTION_ICON_CLASS_NAME}>
-                <FontAwesomeIcon
-                  icon={faPaperPlane}
-                  size="lg"
-                />
-              </span>
+              <section
+                className="rounded-lg absolute top-[1px] right-[1px] bottom-[1px] z-10 flex"
+              >
+                <span onClick={() => openRef.current()} className={ACTION_ICON_CLASS_NAME}>
+                  <FontAwesomeIcon
+                    icon={faPlusCircle}
+                    size="lg"
+                  />
+                </span>
+
+                <span onClick={() => send()} className={ACTION_ICON_CLASS_NAME}>
+                  <FontAwesomeIcon
+                    icon={faPaperPlane}
+                    size="lg"
+                  />
+                </span>
+              </section>
+
+              <TextEditor
+                editorRef={editorRef}
+                content=""
+                className="w-full"
+                placeholder="Write your message here"
+                onSend={send}
+                clearOnSend={false}
+                maxCharacters={MAX_CHARACTER}
+                onChange={() => characterCountRender.current()}
+              />
             </section>
 
-            <TextEditor
-              editorRef={editorRef}
-              content=""
-              className="w-full"
-              placeholder="Write your message here"
-              onSend={send}
-              clearOnSend={false}
-              maxCharacters={MAX_CHARACTER}
-              onChange={() => characterCountRender.current()}
-            />
-          </section>
+            <section className="flex justify-between items-center">
+              <p className="select-none text-xs opacity-60">Use <code>ctrl + enter</code> to send</p>
 
-          <section className="flex justify-between items-center">
-            <p className="select-none text-xs opacity-60">Use <code>ctrl + enter</code> to send</p>
-
-            <CharacterCounter editor={editorRef} forceUpdateRef={characterCountRender} />
+              <CharacterCounter editor={editorRef} forceUpdateRef={characterCountRender} />
+            </section>
           </section>
         </section>
+
+        {showParticipants && <ParticipantList channel={channel} />}
       </section>
     </Layout>
   );
