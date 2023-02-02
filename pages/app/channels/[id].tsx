@@ -17,7 +17,7 @@ import type { Editor } from '@tiptap/core';
 import { useRouter } from 'next/router';
 import { MutableRefObject, useEffect, useRef, useState } from 'react';
 import { useAsync } from 'react-use';
-import { LoadingOverlay } from '@mantine/core';
+import { LoadingOverlay, Tooltip } from '@mantine/core';
 import Messages from '@/components/channel/MessageRenderer';
 import useEditMessage from '@/lib/store/editMessage';
 import Attachments, { DropArea } from '@/components/channel/AttachmentHandler';
@@ -35,11 +35,19 @@ const ToggleShowParticipant = () => {
   const [show, setShow] = useInternal((s) => [s.showParticipants, s.setShowParticipants], shallow);
 
   return (
-    <FontAwesomeIcon
-      icon={faUser}
-      className={`${show ? 'text-cloudy-100' : 'text-cloudy-300'} cursor-pointer`}
-      onClick={() => setShow(!show)}
-    />
+    <Tooltip
+      label="Toggle List"
+      color="blue"
+      withArrow
+      arrowSize={6}
+      offset={10}
+    >
+      <FontAwesomeIcon
+        icon={faUser}
+        className={`${show ? 'text-cloudy-100' : 'text-cloudy-300'} cursor-pointer`}
+        onClick={() => setShow(!show)}
+      />
+    </Tooltip>
   );
 };
 

@@ -251,7 +251,7 @@ const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { messa
     <section id={message.id} className={['group relative px-6 py-1 flex gap-4 items-center', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
       <ActionPopOver message={message} />
 
-      <section className="w-12 flex items-center justify-center h-full select-none">
+      <section className="w-12 flex items-center justify-center h-full select-none flex-shrink-0">
         <p className="text-xs text-cloudy-400 hidden group-hover:block">{createdTime.toLocaleString(DateTime.TIME_SIMPLE)}</p>
       </section>
 

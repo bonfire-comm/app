@@ -1,5 +1,6 @@
 import EventEmitter from 'eventemitter3';
 import { doc, getDoc } from 'firebase/firestore';
+import { clone } from 'lodash-es';
 import type UserManager from '../managers/user';
 import BaseStruct from './base';
 import useBuddies from '../store/buddies';
@@ -52,7 +53,6 @@ export default class User extends BaseStruct implements UserOptions {
     this.activity = data.activity;
 
     this.manager = manager;
-    this.manager.cache.set(this.id, this);
   }
 
   async fetch() {
@@ -182,6 +182,6 @@ export default class User extends BaseStruct implements UserOptions {
   }
 
   copy() {
-    return new User(this, this.manager);
+    return clone(this);
   }
 }

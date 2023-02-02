@@ -1,5 +1,5 @@
 import { ref, remove, update } from 'firebase/database';
-import { omitBy, pick } from 'lodash-es';
+import { clone, omitBy, pick } from 'lodash-es';
 import BaseStruct from './base';
 import type Channel from './channel';
 import firebaseClient from '../firebase';
@@ -68,7 +68,7 @@ export default class Message extends BaseStruct implements ChannelMessageData {
   }
 
   copy() {
-    return new Message(this, this.channel);
+    return clone(this);
   }
 
   toJSON() {

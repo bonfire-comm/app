@@ -1,3 +1,4 @@
+import { clone } from 'lodash-es';
 import firebaseClient from '../firebase';
 import BaseStruct from './base';
 
@@ -29,6 +30,6 @@ export default class Buddies extends BaseStruct implements UserBuddies {
   }
 
   copy() {
-    return new Buddies(this);
+    return clone(this);
   }
 }

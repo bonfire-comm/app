@@ -279,6 +279,7 @@ export default class UserManager {
       ...main,
       status,
     }, this);
+
     this.cache.set(id, user);
 
     return user;

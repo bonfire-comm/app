@@ -24,7 +24,7 @@ interface Props {
   onClick?: () => void;
 }
 
-export default function UserList({
+const UserList = (({
   user,
   showAccept,
   enableMenu = true,
@@ -33,7 +33,7 @@ export default function UserList({
   indicatorSize,
   enableClick = false,
   onClick = noop
-}: Props) {
+}: Props) => {
   const [added, blocked] = useBuddies((state) => [state.added, state.blocked], shallow);
   const clipboard = useClipboard({ timeout: 500 });
   const forceRender = useForceUpdate();
@@ -49,7 +49,8 @@ export default function UserList({
     return () => {
       user.events.off('changed', handler);
     };
-  }, [user, forceRender]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const acceptPending = async () => {
     try {
@@ -182,4 +183,6 @@ export default function UserList({
       </section>
     </section>
   );
-}
+});
+
+export default UserList;

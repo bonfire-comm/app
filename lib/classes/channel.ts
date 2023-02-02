@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import { isEqual, noop, pick } from 'lodash-es';
+import { clone, isEqual, noop, pick } from 'lodash-es';
 import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, serverTimestamp, set, update } from 'firebase/database';
 import { doc, updateDoc } from 'firebase/firestore';
 import BaseStruct from './base';
@@ -338,6 +338,6 @@ export default class Channel extends BaseStruct implements ChannelData {
   }
 
   copy() {
-    return new Channel(this, this.manager);
+    return clone(this);
   }
 }
