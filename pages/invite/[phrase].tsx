@@ -10,15 +10,16 @@ import firebaseClient from '@/lib/firebase';
 import { useRouter } from 'next/router';
 import Meta from '@/components/Meta';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleXmark } from '@fortawesome/free-solid-svg-icons';
+import { faBan, faCircleXmark } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
-  invite: ChannelInviteData | null;
-  channel: Pick<ChannelData, 'id' | 'name' | 'owner' | 'image' | 'participants'> | null;
-  inviter: Pick<UserData, 'id' | 'name' | 'discriminator'> | null;
+  invite?: ChannelInviteData | null;
+  channel?: Pick<ChannelData, 'id' | 'name' | 'owner' | 'image' | 'participants'> | null;
+  inviter?: Pick<UserData, 'id' | 'name' | 'discriminator'> | null;
+  banned?: boolean;
 }
 
-export default function InvitePage({ invite, channel, inviter }: Props) {
+export default function InvitePage({ invite, channel, inviter, banned }: Props) {
   const router = useRouter();
 
   const accept = async () => {
@@ -56,7 +57,18 @@ export default function InvitePage({ invite, channel, inviter }: Props) {
             </>
           )}
 
-          {!invite && (
+          {banned && (
+            <>
+              <FontAwesomeIcon
+                icon={faBan}
+                className="text-6xl mb-4 text-red-400"
+              />
+
+              <h2 className="text-xl font-extrabold">You&apos;re banned from this group</h2>
+            </>
+          )}
+
+          {!invite && !banned && (
             <>
               <FontAwesomeIcon
                 icon={faCircleXmark}
@@ -81,21 +93,35 @@ export const getServerSideProps = authenticatedServerProps(async (ctx) => {
   }
 
   const data = (await admin.firestore().doc(`invites/${phrase}`).get()).data() as ChannelInviteData | undefined ?? null;
-  if (data) data.createdAt = (data as any).createdAt.toDate().toISOString();
+  if (!data) {
+    return {
+      props: {}
+    };
+  }
+
+  data.createdAt = (data as any).createdAt.toDate().toISOString();
 
   const channel = data
-    ? pick((await admin.firestore().doc(`channels/${data.channelId}`).get()).data(), ['id', 'name', 'owner', 'image', 'participants']) as Props['channel']
+    ? (await admin.firestore().doc(`channels/${data.channelId}`).get()).data() as ChannelData
     : null;
 
+  if (channel && channel.bans[ctx.user.id]) {
+    return {
+      props: {
+        banned: true
+      }
+    };
+  }
+
   const inviter = data
-    ? pick((await admin.firestore().doc(`users/${data.createdBy}`).get()).data(), ['id', 'name', 'discriminator']) as Props['inviter']
+    ? (await admin.firestore().doc(`users/${data.createdBy}`).get()).data() as UserData
     : null;
 
   return {
     props: {
       invite: data,
-      channel,
-      inviter
+      channel: pick(channel, ['id', 'name', 'owner', 'image', 'participants']),
+      inviter: pick(inviter, ['id', 'name', 'discriminator'])
     }
   };
 });

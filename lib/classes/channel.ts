@@ -1,6 +1,6 @@
 import EventEmitter from 'eventemitter3';
 import { clone, isEqual, noop } from 'lodash-es';
-import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, serverTimestamp, set, update } from 'firebase/database';
+import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, remove, serverTimestamp, set, update } from 'firebase/database';
 import { collection, deleteDoc, doc, getDocs, query as firestoreQuery, setDoc, updateDoc, where, onSnapshot } from 'firebase/firestore';
 import randomWords from 'random-words';
 import BaseStruct from './base';
@@ -284,6 +284,7 @@ export default class Channel extends BaseStruct implements ChannelData {
 
   addParticipant(id: string) {
     if (this.isDM) return;
+    if (this.bans[id]) return;
 
     this.participants[id] = true;
 
@@ -378,6 +379,16 @@ export default class Channel extends BaseStruct implements ChannelData {
     const snap = await getDocs(q);
 
     return snap.docs.map((d) => d.data() as ChannelInviteData);
+  }
+
+  async delete() {
+    const docRef = doc(firebaseClient.firestore, 'channels', this.id);
+    const dataRef = ref(firebaseClient.rtdb, `channels/${this.id}`);
+
+    await Promise.all([
+      remove(dataRef),
+      deleteDoc(docRef),
+    ]);
   }
 
   async commit() {

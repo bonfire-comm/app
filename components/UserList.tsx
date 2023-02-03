@@ -7,7 +7,7 @@ import firebaseClient from '@/lib/firebase';
 import { useClipboard, useForceUpdate } from '@mantine/hooks';
 import { shallow } from 'zustand/shallow';
 import useBuddies from '@/lib/store/buddies';
-import { useEffect } from 'react';
+import { MouseEventHandler, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { noop } from '@mantine/utils';
 import AvatarWithStatus from './AvatarWithStatus';
@@ -21,7 +21,8 @@ interface Props {
   avatarSize?: number;
   indicatorSize?: number;
   enableClick?: boolean;
-  onClick?: () => void;
+  onClick?: MouseEventHandler<HTMLDivElement>;
+  onContextMenu?: MouseEventHandler<HTMLDivElement>;
   showCrown?: boolean;
 }
 
@@ -34,6 +35,7 @@ const UserList = (({
   indicatorSize,
   enableClick = false,
   onClick = noop,
+  onContextMenu = noop,
   showCrown = false
 }: Props) => {
   const [added, blocked] = useBuddies((state) => [state.added, state.blocked], shallow);
@@ -98,7 +100,7 @@ const UserList = (({
 
   if (barebone) {
     return (
-      <section onClick={onClick} className={`flex select-none ${enableClick ? 'hover:bg-cloudy-800 hover:bg-opacity-50 cursor-pointer px-3 py-2 rounded-xl' : ''}`}>
+      <section onClick={onClick} onContextMenu={onContextMenu} className={`flex select-none ${enableClick ? 'hover:bg-cloudy-800 hover:bg-opacity-50 cursor-pointer px-3 py-2 rounded-xl' : ''}`}>
         <section className="flex gap-4 items-center">
           <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={user.image} status={user.status} />
 

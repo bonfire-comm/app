@@ -32,6 +32,9 @@ import UserList from '@/components/UserList';
 import openProfileModal from '@/lib/helpers/openProfileModal';
 import { openEditChannelModal } from '@/lib/helpers/openCreateChannelModal';
 import openLeaveGroupModal from '@/lib/helpers/openLeaveGroupModal';
+import useMenu from '@/lib/store/menu';
+import sleep from '@/lib/helpers/sleep';
+import { openConfirmModal } from '@mantine/modals';
 
 const ToggleShowParticipant = () => {
   const [show, setShow] = useInternal((s) => [s.showParticipants, s.setShowParticipants], shallow);
@@ -76,7 +79,7 @@ const ControlIcons = ({ channel }: { channel?: Channel | null }) => {
 
       <ToggleShowParticipant />
 
-      {channel && channel.owner !== uid && (
+      {channel && !channel.isDM && channel.owner !== uid && (
         <Tooltip
           label="Leave"
           color="blue"
@@ -169,8 +172,11 @@ const Header = ({ channel }: { channel?: Channel | null }) => (
 );
 
 const ParticipantList = ({ channel }: { channel: Channel | null }) => {
+  const uid = useUser((s) => s?.id);
   const [updateCount, forceRender] = useReducer((v) => v + 1, 0);
+  const setContextItems = useMenu((s) => s.setContextMenuItems);
   const clipboard = useClipboard({ timeout: 2000 });
+  const router = useRouter();
   const users = useAsync(async () => {
     if (!channel) return [];
 
@@ -233,6 +239,77 @@ const ParticipantList = ({ channel }: { channel: Channel | null }) => {
           key={u.id}
           enableClick
           onClick={() => openProfileModal(u)}
+          onContextMenu={async () => {
+            await sleep(0);
+            setContextItems((Menu) => (
+              <>
+                <Menu.Item onClick={() => openProfileModal(u)}>Profile</Menu.Item>
+
+                {!u.isSelf && (
+                  <Menu.Item onClick={async () => {
+                    const id = await firebaseClient.managers.channels.createDM(u.id).catch(() => null);
+                    if (!id) return;
+
+                    router.push(`/app/channels/${id}`);
+                  }}>Message</Menu.Item>
+                )}
+
+                {channel && !channel.isDM && channel.owner !== u.id && channel.owner === uid && (
+                  <>
+                    <Menu.Divider />
+
+                    <Menu.Label>Manage</Menu.Label>
+
+                    <Menu.Item color="yellow" onClick={() => {
+                      openConfirmModal({
+                        centered: true,
+                        title: 'Are you sure?',
+                        children: <p>This action is not reversible.</p>,
+                        closeOnConfirm: true,
+                        labels: {
+                          confirm: 'Continue',
+                          cancel: 'Cancel'
+                        },
+                        confirmProps: {
+                          color: 'red'
+                        },
+                        cancelProps: {
+                          color: 'gray'
+                        },
+                        onConfirm: async () => {
+                          await channel.removeParticipant(u.id)?.commit();
+                        },
+                        zIndex: 1000000000
+                      });
+                    }}>Kick {u.name}</Menu.Item>
+
+                    <Menu.Item color="red" onClick={() => {
+                      openConfirmModal({
+                        centered: true,
+                        title: 'Are you sure?',
+                        children: <p>This action is not reversible.</p>,
+                        closeOnConfirm: true,
+                        labels: {
+                          confirm: 'Continue',
+                          cancel: 'Cancel'
+                        },
+                        confirmProps: {
+                          color: 'red'
+                        },
+                        cancelProps: {
+                          color: 'gray'
+                        },
+                        onConfirm: async () => {
+                          await channel.ban(u.id)?.commit();
+                        },
+                        zIndex: 1000000000
+                      });
+                    }}>Ban {u.name}</Menu.Item>
+                  </>
+                )}
+              </>
+            ));
+          }}
           user={u}
           barebone
           avatarSize={38}
@@ -259,13 +336,19 @@ export default function ChannelPage() {
   // Channel cache
   useEffect(() => {
     const handler = (id: string, ch: Channel) => router.query.id === id && setChannel(ch);
+    const deleteHandler = () => {
+      setChannel(null);
+      router.push('/app');
+    };
 
     firebaseClient.managers.channels.cache.events.on('changed', handler);
     firebaseClient.managers.channels.cache.events.on('set', handler);
+    firebaseClient.managers.channels.cache.events.on('delete', deleteHandler);
 
     return () => {
       firebaseClient.managers.channels.cache.events.off('changed', handler);
       firebaseClient.managers.channels.cache.events.off('set', handler);
+      firebaseClient.managers.channels.cache.events.off('delete', deleteHandler);
     };
   }, [router]);
 

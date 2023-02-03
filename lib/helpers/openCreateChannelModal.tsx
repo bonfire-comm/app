@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { useForm } from '@mantine/form';
-import { closeModal, openModal } from '@mantine/modals';
+import { closeModal, openConfirmModal, openModal } from '@mantine/modals';
 import { useAsync } from 'react-use';
 import { Button, MultiSelect, TextInput } from '@mantine/core';
 import { useToggle } from '@mantine/hooks';
@@ -10,7 +10,6 @@ import { useRouter } from 'next/router';
 import useBuddies from '../store/buddies';
 import firebaseClient from '../firebase';
 import User from '../classes/user';
-import bigButtonClass from './bigButtonClass';
 import generateId from './generateId';
 import Channel from '../classes/channel';
 
@@ -25,6 +24,7 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
       description: channel?.description ?? '',
       image: (channel?.image ?? null) as File | Blob | string | null | undefined,
       participants: Object.keys(channel?.participants ?? {}) as string[],
+      bans: Object.keys(channel?.bans ?? {}) as string[],
     },
     validateInputOnChange: true,
     validate: {
@@ -36,7 +36,12 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
   });
 
   const participantValues = useAsync(async () => {
-    const users = (await Promise.all(buddies.added.map((buddy) => firebaseClient.managers.user.fetch(buddy)))).filter(Boolean) as User[];
+    const users = (await Promise.all(
+      buddies.added
+        .filter((id) => channel ? !channel.bans[id] : true)
+        .map((buddy) => firebaseClient.managers.user.fetch(buddy))
+    ))
+      .filter(Boolean) as User[];
 
     return users.map((user) => ({
       value: user.id,
@@ -47,7 +52,27 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
         </section>
       ),
     }));
-  }, [buddies.added]);
+  }, [buddies.added, channel]);
+
+  const bannedValues = useAsync(async () => {
+    if (!channel) return [];
+
+    const users = (await Promise.all(
+      Object.keys(channel.bans)
+        .map((buddy) => firebaseClient.managers.user.fetch(buddy))
+    ))
+      .filter(Boolean) as User[];
+
+    return users.map((user) => ({
+      value: user.id,
+      label: (
+        <section className="flex items-center gap-3">
+          <img src={user.image} alt="" className="h-10 w-10 rounded-full" />
+          <p>{user.name}</p>
+        </section>
+      ),
+    }));
+  }, [channel]);
 
   const onSubmit = form.onSubmit(async (values) => {
     if (!firebaseClient.auth.currentUser) return;
@@ -59,7 +84,6 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
       isDM: false,
       pins: [],
       createdAt: new Date(),
-      bans: {},
       voice: {
         participants: [],
         started: false,
@@ -69,6 +93,7 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
       description: values.description,
       owner: firebaseClient.auth.currentUser.uid,
       participants: values.participants.reduce((prev, curr) => ({ ...prev, [curr]: true }), { [firebaseClient.auth.currentUser.uid]: true }),
+      bans: values.bans.reduce((prev, curr) => ({ ...prev, [curr]: true }), {}),
     };
 
     if (values.image && typeof values.image !== 'string') {
@@ -129,7 +154,7 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
             }}
           />
 
-          {!participantValues.loading && participantValues.value && participantValues.value.length && (
+          {!participantValues.loading && participantValues.value && (
             <MultiSelect
               {...form.getInputProps('participants')}
               // @ts-expect-error - yes
@@ -144,15 +169,65 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
               maxSelectedValues={30}
             />
           )}
+
+          {!bannedValues.loading && bannedValues.value && channel && (
+            <MultiSelect
+              {...form.getInputProps('bans')}
+              // @ts-expect-error - yes
+              data={bannedValues.value}
+              className="mt-3"
+              label="BANS"
+              classNames={{
+                defaultValue: 'h-auto py-2',
+                defaultValueLabel: 'text-base',
+                input: 'py-2'
+              }}
+            />
+          )}
         </section>
       </section>
 
-      <section className="flex justify-end ">
+      <section className="flex justify-end gap-3">
+        {channel && (
+          <Button
+            color="red"
+            variant="light"
+            onClick={() => {
+              closeModal('edit-channel');
+              openConfirmModal({
+                centered: true,
+                title: 'Are you sure?',
+                children: <p>This action is not reversible.</p>,
+                closeOnConfirm: true,
+                labels: {
+                  confirm: 'Continue',
+                  cancel: 'Cancel'
+                },
+                confirmProps: {
+                  color: 'red'
+                },
+                cancelProps: {
+                  color: 'gray'
+                },
+                onConfirm: async () => {
+                  await channel.delete();
+                },
+                zIndex: 1000000000
+              });
+            }}
+          >
+            Delete group
+          </Button>
+        )}
+
         <Button
           disabled={!form.values.name || !!form.errors.name || disabled}
-          classNames={{ root: bigButtonClass() }}
+          color="indigo"
           type="submit"
           loading={loading}
+          loaderProps={{
+            color: 'blue'
+          }}
         >
           {channel ? 'Save' : 'Create'}
         </Button>

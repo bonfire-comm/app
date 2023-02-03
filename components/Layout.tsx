@@ -2,7 +2,7 @@ import firebaseClient from '@/lib/firebase';
 import { ReactNode } from 'react';
 import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
-import { ActionIcon, Divider, Menu, Tooltip } from '@mantine/core';
+import { ActionIcon, Divider, Menu, Portal, Tooltip } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisV, faPencil, faPlus, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
@@ -14,6 +14,7 @@ import Twemoji from './Twemoji';
 import NavLink from './NavLink';
 import UserList from './UserList';
 import ChannelSelector from './ChannelSelector';
+import ContextMenu from './ContextMenu';
 
 interface Props {
   children: ReactNode;
@@ -84,6 +85,10 @@ export default function Layout({ children, innerHeader = (<section></section>) }
       onIdle={() => firebaseClient.managers.user.setStatus('idle')}
       onActive={() => firebaseClient.managers.user.setStatus('online')}
     >
+      <Portal>
+        <ContextMenu />
+      </Portal>
+
       <main className="grid grid-cols-[20rem_1fr] h-screen w-screen relative overflow-hidden">
         <section className="grid grid-rows-[3.5rem_1fr_6rem] w-full bg-cloudy-700 bg-opacity-80">
           <section className="shadow flex items-center px-4 w-full h-full">
