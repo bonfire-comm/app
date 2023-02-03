@@ -1,7 +1,7 @@
 import EventEmitter from 'eventemitter3';
 import { clone, isEqual, noop } from 'lodash-es';
 import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, serverTimestamp, set, update } from 'firebase/database';
-import { collection, deleteDoc, doc, getDocs, query as firestoreQuery, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, query as firestoreQuery, setDoc, updateDoc, where, onSnapshot } from 'firebase/firestore';
 import randomWords from 'random-words';
 import BaseStruct from './base';
 import firebaseClient from '../firebase';
@@ -68,6 +68,26 @@ export default class Channel extends BaseStruct implements ChannelData {
     this.bans = data.bans;
 
     this.manager = manager;
+
+    this.listenChanges();
+  }
+
+  listenChanges() {
+    const unsub = onSnapshot(doc(this.manager.client.firestore, 'channels', this.id), (snap) => {
+      const data = snap.data() as ChannelData;
+
+      if (data) {
+        if (!isEqual(data.participants, this.participants)) {
+          this.events.emit('participant', this);
+        }
+
+        this.set(data);
+
+        this.manager.cache.events.emit('changed', this.id, this);
+      }
+    });
+
+    return unsub;
   }
 
   listenMessages() {

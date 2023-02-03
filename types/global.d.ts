@@ -1,3 +1,4 @@
+import Channel from '@/lib/classes/channel';
 import Message from '@/lib/classes/message';
 import { Howl } from 'howler';
 import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
@@ -109,6 +110,8 @@ declare global {
   }
 
   type ChannelEventTypes = {
+    changed: (channel: Channel) => void;
+    participant: (channel: Channel) => void;
     message: (message: Message) => void;
     [k: `message-${string}`]: (message: Message) => void;
   };

@@ -125,11 +125,25 @@ const Header = ({ channel }: { channel?: Channel | null }) => (
 );
 
 const ParticipantList = ({ channel }: { channel: Channel | null }) => {
+  const forceRender = useForceUpdate();
   const clipboard = useClipboard({ timeout: 2000 });
   const users = useAsync(async () => {
     if (!channel) return [];
 
     return (await Promise.all(Object.keys(channel?.participants).map((id) => firebaseClient.managers.user.fetch(id)))).filter(Boolean) as User[];
+  }, [channel]);
+
+  useEffect(() => {
+    if (!channel) return;
+
+    const handler = () => forceRender();
+
+    channel.events.on('participant', handler);
+
+    return () => {
+      channel.events.off('participant', handler);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel]);
 
   const createInvite = async () => {
