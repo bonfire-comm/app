@@ -14,7 +14,7 @@ import { faCircleXmark } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
   invite: ChannelInviteData | null;
-  channel: Pick<ChannelData, 'id' | 'name' | 'owner' | 'image'> | null;
+  channel: Pick<ChannelData, 'id' | 'name' | 'owner' | 'image' | 'participants'> | null;
   inviter: Pick<UserData, 'id' | 'name' | 'discriminator'> | null;
 }
 
@@ -36,7 +36,7 @@ export default function InvitePage({ invite, channel, inviter }: Props) {
 
       <section className="w-screen h-screen grid place-items-center">
         <section className="border border-cloudy-500 bg-cloudy-600 p-6 rounded-xl min-w-[24rem] max-w-[24rem] flex flex-col items-center">
-          {invite && channel && inviter && (
+          {invite && channel && Object.keys(channel.participants).length < 30 && inviter && (
             <>
               <h3 className="text-cloudy-300">You&apos;ve been invited to</h3>
               <section className="mt-6 mb-2">
@@ -63,7 +63,7 @@ export default function InvitePage({ invite, channel, inviter }: Props) {
                 className="text-6xl mb-4 text-red-400"
               />
 
-              <h2 className="text-xl font-extrabold">Invalid Invite</h2>
+              <h2 className="text-xl font-extrabold">{channel && Object.keys(channel.participants).length <= 30 ? 'Group is full' : 'Invalid Invite'}</h2>
             </>
           )}
         </section>
@@ -84,7 +84,7 @@ export const getServerSideProps = authenticatedServerProps(async (ctx) => {
   if (data) data.createdAt = (data as any).createdAt.toDate().toISOString();
 
   const channel = data
-    ? pick((await admin.firestore().doc(`channels/${data.channelId}`).get()).data(), ['id', 'name', 'owner', 'image']) as Props['channel']
+    ? pick((await admin.firestore().doc(`channels/${data.channelId}`).get()).data(), ['id', 'name', 'owner', 'image', 'participants']) as Props['channel']
     : null;
 
   const inviter = data

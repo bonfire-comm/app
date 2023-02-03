@@ -12,18 +12,19 @@ import firebaseClient from '../firebase';
 import User from '../classes/user';
 import bigButtonClass from './bigButtonClass';
 import generateId from './generateId';
+import Channel from '../classes/channel';
 
-const CreateChannelModalContent = () => {
+const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
   const router = useRouter();
   const [disabled, setDisabled] = useState(false);
   const [loading, setLoading] = useToggle();
   const buddies = useBuddies();
   const form = useForm({
     initialValues: {
-      name: '',
-      description: '',
-      image: null as File | Blob | null | undefined,
-      participants: [] as string[],
+      name: channel?.name ?? '',
+      description: channel?.description ?? '',
+      image: (channel?.image ?? null) as File | Blob | string | null | undefined,
+      participants: Object.keys(channel?.participants ?? {}) as string[],
     },
     validateInputOnChange: true,
     validate: {
@@ -55,21 +56,22 @@ const CreateChannelModalContent = () => {
 
     const data: ChannelData = {
       id: generateId(),
-      name: values.name,
-      description: values.description,
       isDM: false,
-      owner: firebaseClient.auth.currentUser.uid,
-      participants: values.participants.reduce((prev, curr) => ({ ...prev, [curr]: true }), { [firebaseClient.auth.currentUser.uid]: true }),
       pins: [],
       createdAt: new Date(),
       bans: {},
       voice: {
         participants: [],
         started: false,
-      }
+      },
+      ...(channel?.toJSON?.() ?? {}),
+      name: values.name,
+      description: values.description,
+      owner: firebaseClient.auth.currentUser.uid,
+      participants: values.participants.reduce((prev, curr) => ({ ...prev, [curr]: true }), { [firebaseClient.auth.currentUser.uid]: true }),
     };
 
-    if (values.image) {
+    if (values.image && typeof values.image !== 'string') {
       const filename = `${data.id}-${Date.now()}.webp`;
 
       await firebaseClient.uploadFile(`channels/${filename}`, values.image);
@@ -81,7 +83,7 @@ const CreateChannelModalContent = () => {
       data.image = url;
     }
 
-    await firebaseClient.managers.channels.create(data);
+    await firebaseClient.managers.channels.upset(data);
     await router.push(`/app/channels/${data.id}`);
 
     closeModal('create-channel');
@@ -90,10 +92,11 @@ const CreateChannelModalContent = () => {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <section className="flex gap-4">
-        <section className="flex-grow flex flex-col">
+        <section className="flex-grow w-1/2 flex flex-col">
           <h3 className="font-extrabold text-sm text-cloudy-300 mb-2">PROFILE PICTURE</h3>
 
           <ImagePicker
+            src={channel?.image}
             enableCropping
             aspect={1}
             circularCrop
@@ -105,7 +108,7 @@ const CreateChannelModalContent = () => {
           />
         </section>
 
-        <section className="flex-grow">
+        <section className="flex-grow w-1/2">
           <TextInput
             {...form.getInputProps('name')}
             label="NAME"
@@ -145,7 +148,14 @@ const CreateChannelModalContent = () => {
       </section>
 
       <section className="flex justify-end ">
-        <Button disabled={!form.values.name || !!form.errors.name || disabled} classNames={{ root: bigButtonClass() }} type="submit" loading={loading}>Create</Button>
+        <Button
+          disabled={!form.values.name || !!form.errors.name || disabled}
+          classNames={{ root: bigButtonClass() }}
+          type="submit"
+          loading={loading}
+        >
+          {channel ? 'Save' : 'Create'}
+        </Button>
       </section>
     </form>
   );
@@ -162,3 +172,13 @@ const openCreateChannelModal = () => {
 };
 
 export default openCreateChannelModal;
+
+export const openEditChannelModal = (channel: Channel) => {
+  openModal({
+    modalId: 'edit-channel',
+    title: 'Edit channel',
+    children: <CreateChannelModalContent channel={channel} />,
+    size: 'xl',
+    centered: true,
+  });
+};

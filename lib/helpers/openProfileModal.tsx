@@ -6,6 +6,8 @@ import { faICursor, faPencil, faUserPlus } from '@fortawesome/free-solid-svg-ico
 import { useEffect, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
 import { useRouter } from 'next/router';
+import { showNotification } from '@mantine/notifications';
+import Twemoji from '@/components/Twemoji';
 import User from '../classes/user';
 import loadImage from './loadImage';
 import getSignificantColor from './getSignificantColor';
@@ -34,14 +36,33 @@ const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { use
           <section className="flex justify-end h-8 gap-1">
             {!user.isSelf && (
               <>
-                {!user.isFriend && <Tooltip label="Add friend">
+                {!user.isBuddy() && <Tooltip label="Add friend">
                   <ActionIcon
                     color="green"
                     variant="subtle"
                     p="md"
                     radius="xl"
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    onClick={() => firebaseClient.managers.user.addBuddy(user.name!, user.discriminator)}
+                    onClick={async () => {
+                      try {
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                        await firebaseClient.managers.user.addBuddy(user.name!, user.discriminator);
+
+                        showNotification({
+                          color: 'green',
+                          title: <Twemoji>✅ Sent!</Twemoji>,
+                          message: 'Friend request sent!'
+                        });
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      } catch (e: any) {
+                        if (e.message === 'already-pending') {
+                          return showNotification({
+                            color: 'orange',
+                            title: <Twemoji>⚠️ Already pending!</Twemoji>,
+                            message: 'You already have a pending friend request with this user.'
+                          });
+                        }
+                      }
+                    }}
                   >
                     <FontAwesomeIcon
                       icon={faUserPlus}

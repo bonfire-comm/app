@@ -52,7 +52,7 @@ const Preview = ({ channel }: PreviewProps) => {
   return (
     <section className="flex gap-3 items-center">
       {channel.image && (
-        <img className="w-8 rounded-full" src={channel.image} alt={initials} />
+        <img className="w-[38px] h-[38px] rounded-full" src={channel.image} alt={initials} />
       )}
       {!channel.image && (
         <Avatar color="orange" radius="xl">{initials}</Avatar>

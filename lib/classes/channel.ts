@@ -77,12 +77,12 @@ export default class Channel extends BaseStruct implements ChannelData {
       const data = snap.data() as ChannelData;
 
       if (data) {
-        if (!isEqual(data.participants, this.participants)) {
-          this.events.emit('participant', this);
-        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data.createdAt = (data as any).createdAt.toDate() as Date;
 
         this.set(data);
 
+        this.events.emit('changed', this);
         this.manager.cache.events.emit('changed', this.id, this);
       }
     });
@@ -159,6 +159,12 @@ export default class Channel extends BaseStruct implements ChannelData {
 
   clean() {
     this.messages.length = 0;
+  }
+
+  async leave() {
+    if (!firebaseClient.auth.currentUser) return;
+
+    await this.removeParticipant(firebaseClient.auth.currentUser.uid)?.commit();
   }
 
   set(data: ChannelData) {
@@ -396,5 +402,20 @@ export default class Channel extends BaseStruct implements ChannelData {
 
   copy() {
     return clone(this);
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      image: this.image,
+      description: this.description,
+      participants: this.participants,
+      pins: this.pins,
+      voice: this.voice,
+      isDM: this.isDM,
+      owner: this.owner,
+      bans: this.bans
+    };
   }
 }

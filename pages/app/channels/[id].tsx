@@ -9,13 +9,13 @@ import Channel from '@/lib/classes/channel';
 import firebaseClient from '@/lib/firebase';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 import useUser from '@/lib/store/user';
-import { faAt, faPaperPlane, faPlus, faPlusCircle, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faAt, faGear, faPaperPlane, faPlus, faPlusCircle, faRightFromBracket, faUser } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
 import { useClipboard, useForceUpdate, useWindowEvent } from '@mantine/hooks';
 import type { Editor } from '@tiptap/core';
 import { useRouter } from 'next/router';
-import { MutableRefObject, useEffect, useRef, useState } from 'react';
+import { MutableRefObject, useEffect, useReducer, useRef, useState } from 'react';
 import { useAsync } from 'react-use';
 import { LoadingOverlay, Tooltip } from '@mantine/core';
 import Messages from '@/components/channel/MessageRenderer';
@@ -30,6 +30,8 @@ import { shallow } from 'zustand/shallow';
 import User from '@/lib/classes/user';
 import UserList from '@/components/UserList';
 import openProfileModal from '@/lib/helpers/openProfileModal';
+import { openEditChannelModal } from '@/lib/helpers/openCreateChannelModal';
+import openLeaveGroupModal from '@/lib/helpers/openLeaveGroupModal';
 
 const ToggleShowParticipant = () => {
   const [show, setShow] = useInternal((s) => [s.showParticipants, s.setShowParticipants], shallow);
@@ -48,6 +50,48 @@ const ToggleShowParticipant = () => {
         onClick={() => setShow(!show)}
       />
     </Tooltip>
+  );
+};
+
+const ControlIcons = ({ channel }: { channel?: Channel | null }) => {
+  const uid = useUser((s) => s?.id);
+
+  return (
+    <section className="flex gap-4">
+      {channel && channel.owner === uid && (
+        <Tooltip
+          label="Settings"
+          color="blue"
+          withArrow
+          arrowSize={6}
+          offset={10}
+        >
+          <FontAwesomeIcon
+            icon={faGear}
+            className="cursor-pointer"
+            onClick={() => openEditChannelModal(channel)}
+          />
+        </Tooltip>
+      )}
+
+      <ToggleShowParticipant />
+
+      {channel && channel.owner !== uid && (
+        <Tooltip
+          label="Leave"
+          color="blue"
+          withArrow
+          arrowSize={6}
+          offset={10}
+        >
+          <FontAwesomeIcon
+            icon={faRightFromBracket}
+            className="cursor-pointer text-red-400"
+            onClick={() => openLeaveGroupModal(channel)}
+          />
+        </Tooltip>
+      )}
+    </section>
   );
 };
 
@@ -79,7 +123,7 @@ const DMInnerHeader = ({ channel }: { channel: Channel }) => {
           <h2 className="font-extrabold text-lg">{user.value.name}</h2>
         </section>
 
-        <ToggleShowParticipant />
+        <ControlIcons channel={channel} />
       </section>
     </>
   );
@@ -94,7 +138,7 @@ const InnerHeader = ({ channel }: { channel?: Channel | null }) => (
         <h2 className="font-extrabold text-lg">{channel?.name}</h2>
       </section>
 
-      <ToggleShowParticipant />
+      <ControlIcons channel={channel} />
     </section>
   </>
 );
@@ -125,23 +169,25 @@ const Header = ({ channel }: { channel?: Channel | null }) => (
 );
 
 const ParticipantList = ({ channel }: { channel: Channel | null }) => {
-  const forceRender = useForceUpdate();
+  const [updateCount, forceRender] = useReducer((v) => v + 1, 0);
   const clipboard = useClipboard({ timeout: 2000 });
   const users = useAsync(async () => {
     if (!channel) return [];
 
     return (await Promise.all(Object.keys(channel?.participants).map((id) => firebaseClient.managers.user.fetch(id)))).filter(Boolean) as User[];
-  }, [channel]);
+  }, [channel, updateCount]);
 
   useEffect(() => {
     if (!channel) return;
 
-    const handler = () => forceRender();
+    const handler = () => {
+      forceRender();
+    };
 
-    channel.events.on('participant', handler);
+    channel.events.on('changed', handler);
 
     return () => {
-      channel.events.off('participant', handler);
+      channel.events.off('changed', handler);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel]);

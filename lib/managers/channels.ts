@@ -111,7 +111,7 @@ export default class ChannelManager {
     return channel;
   }
 
-  async create(data: Omit<ChannelData, 'id'> & Partial<Pick<ChannelData, 'id'>>) {
+  async upset(data: Omit<ChannelData, 'id'> & Partial<Pick<ChannelData, 'id'>>) {
     // eslint-disable-next-line no-param-reassign
     if (!data.id) data.id = generateId();
 
@@ -146,7 +146,7 @@ export default class ChannelManager {
       throw new Error('already-exists');
     };
 
-    const channel = await this.create({
+    const channel = await this.upset({
       name: otherUserId,
       participants: {
         [user.id]: true,

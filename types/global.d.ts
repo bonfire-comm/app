@@ -111,7 +111,6 @@ declare global {
 
   type ChannelEventTypes = {
     changed: (channel: Channel) => void;
-    participant: (channel: Channel) => void;
     message: (message: Message) => void;
     [k: `message-${string}`]: (message: Message) => void;
   };

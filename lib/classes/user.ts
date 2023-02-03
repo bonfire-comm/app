@@ -69,10 +69,17 @@ export default class User extends BaseStruct implements UserOptions {
     return data;
   }
 
-  get isFriend() {
+  async isBuddy() {
     const buddies = useBuddies.getState();
 
     return buddies.added.includes(this.id);
+  }
+
+  async isBuddyPending() {
+    const buddies = await this.fetchBuddies();
+    if (!buddies) return false;
+
+    return buddies.pending.includes(this.id);
   }
 
   get isSelf() {
