@@ -12,6 +12,7 @@ const useVoice = create(
 
     deafened: false,
     state: 'CONNECTING' as MeetingState,
+    activeTalker: null as string | null,
   }, (set) => ({
     setRoom: (room: RoomData | null) => set({ room }),
     setOngoingSession: (session: SessionData | null) => set({ ongoingSession: session }),

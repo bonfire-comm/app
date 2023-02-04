@@ -269,6 +269,12 @@ export default class Channel extends BaseStruct implements ChannelData {
       token: this.voiceToken as string,
     });
 
+    const speakerChangedHandler = (id: string | null) => {
+      useVoice.setState({
+        activeTalker: id,
+      });
+    };
+
     const connectionCloseHandler = ({ state }: { state: MeetingState }) => {
       if (state === 'CLOSED') {
         useVoice.setState({
@@ -277,14 +283,17 @@ export default class Channel extends BaseStruct implements ChannelData {
 
         // @ts-expect-error Undocumentec
         meeting.off('meeting-state-changed', connectionCloseHandler);
+        meeting.off('speaker-changed', speakerChangedHandler);
       }
     };
 
     // @ts-expect-error Undocumentec
     meeting.on('meeting-state-changed', connectionCloseHandler);
+    meeting.on('speaker-changed', speakerChangedHandler);
 
     useVoice.setState({
       meeting,
+      state: 'CONNECTING',
     });
 
     if (joinImmediately) {

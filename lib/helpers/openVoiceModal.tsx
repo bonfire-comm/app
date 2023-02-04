@@ -1,10 +1,11 @@
 import { openModal } from '@mantine/modals';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForceUpdate } from '@mantine/hooks';
 import { Participant } from '@videosdk.live/js-sdk/participant';
 import { useAsync } from 'react-use';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
+import { shallow } from 'zustand/shallow';
 import useVoice from '../store/voice';
 import firebaseClient from '../firebase';
 
@@ -49,9 +50,8 @@ const ParticipantPreview = ({ participant, active }: ParticipantPreviewProps) =>
 };
 
 const ChangeProfileModalContent = () => {
-  const meeting = useVoice((s) => s.meeting);
+  const [meeting, activeSpeaker] = useVoice((s) => [s.meeting, s.activeTalker], shallow);
   const forceRender = useForceUpdate();
-  const [activeSpeaker, setActiveSpeaker] = useState<string | null>(null);
 
   useEffect(() => {
     if (!meeting) return;
@@ -60,16 +60,12 @@ const ChangeProfileModalContent = () => {
       forceRender();
     };
 
-    const speakerChangeHandler = (id: string | null) => setActiveSpeaker(id);
-
     meeting.on('participant-joined', updateHandler);
     meeting.on('participant-left', updateHandler);
-    meeting.on('speaker-changed', speakerChangeHandler);
 
     return () => {
       meeting.off('participant-joined', updateHandler);
       meeting.off('participant-left', updateHandler);
-      meeting.off('speaker-changed', speakerChangeHandler);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meeting]);
