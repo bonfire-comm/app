@@ -155,10 +155,6 @@ export default class ChannelManager {
       bans: {},
       pins: [],
       createdAt: new Date(),
-      voice: {
-        started: false,
-        participants: []
-      },
       isDM: true,
     });
 

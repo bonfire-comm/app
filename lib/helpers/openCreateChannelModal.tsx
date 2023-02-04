@@ -84,10 +84,6 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
       isDM: false,
       pins: [],
       createdAt: new Date(),
-      voice: {
-        participants: [],
-        started: false,
-      },
       ...(channel?.toJSON?.() ?? {}),
       name: values.name,
       description: values.description,
