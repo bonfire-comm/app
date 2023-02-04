@@ -1764,6 +1764,13 @@
   dependencies:
     "@types/node" "*"
 
+"@types/jsonwebtoken@^9.0.1":
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/@types/jsonwebtoken/-/jsonwebtoken-9.0.1.tgz#29b1369c4774200d6d6f63135bf3d1ba3ef997a4"
+  integrity sha512-c5ltxazpWabia/4UzhIoaDcIza4KViOQhdbjRlfcIGVnsE3c3brkz9Z+F/EeJIECOQP7W7US2hNE930cWWkPiw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/keyv@^3.1.4":
   version "3.1.4"
   resolved "https://registry.yarnpkg.com/@types/keyv/-/keyv-3.1.4.tgz#3ccdb1c6751b0c7e52300bcdacd5bcbf8faa75b6"
@@ -1974,6 +1981,19 @@
   dependencies:
     "@typescript-eslint/types" "5.48.1"
     eslint-visitor-keys "^3.3.0"
+
+"@videosdk.live/js-sdk@0.0.59", "@videosdk.live/js-sdk@^0.0.59":
+  version "0.0.59"
+  resolved "https://registry.yarnpkg.com/@videosdk.live/js-sdk/-/js-sdk-0.0.59.tgz#eae7965facd93d2280aab870f70d380c7d944d63"
+  integrity sha512-TCF4c2p2YfSkC4BBTij5+DpL0OqeWqcewcl4QL3EDxG7Uq8BxfdAIzIoI8gs6cz7L+kX9pBsN9B+dZkg+BwyNw==
+
+"@videosdk.live/react-sdk@^0.1.62":
+  version "0.1.62"
+  resolved "https://registry.yarnpkg.com/@videosdk.live/react-sdk/-/react-sdk-0.1.62.tgz#1f43919a502c99f18dfb18e40a7c878b1cca4926"
+  integrity sha512-TaZ/a/Wdc7dM1gvWkGjmIClkX1iNHYG/ex346NeVwW7zqNaT7HIf5ANkglbdu80DEBXjEHiYOt3PMgKyEy58aQ==
+  dependencies:
+    "@videosdk.live/js-sdk" "0.0.59"
+    events "^3.3.0"
 
 "@xobotyi/scrollbar-width@^1.9.5":
   version "1.9.5"
@@ -3441,6 +3461,11 @@ eventemitter3@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.0.tgz#084eb7f5b5388df1451e63f4c2aafd71b217ccb3"
   integrity sha512-riuVbElZZNXLeLEoprfNYoDSwTBRR44X3mnhdI1YcnENpWTCsTTVZ2zFuqQcpoyqPQIUXdiPEU0ECAq0KQRaHg==
+
+events@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/events/-/events-3.3.0.tgz#31a95ad0a924e2d2c419a813aeb2c4e878ea7400"
+  integrity sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==
 
 extend@^3.0.2:
   version "3.0.2"

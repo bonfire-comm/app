@@ -1,14 +1,18 @@
 import firebaseClient from '@/lib/firebase';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
 import { ActionIcon, Divider, Menu, Portal, Tooltip } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEllipsisV, faPencil, faPlus, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import { faEarDeaf, faEarListen, faEllipsisV, faMicrophone, faMicrophoneSlash, faPencil, faPhoneSlash, faPlus, faRightFromBracket, faSignal } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
 import CookieSetterBuilder from '@/lib/managers/cookie';
 import openEditProfileModal from '@/lib/helpers/openEditProfileModal';
 import openCreateChannelModal from '@/lib/helpers/openCreateChannelModal';
+import useVoice from '@/lib/store/voice';
+import getVoiceStateClassName from '@/lib/helpers/getVoiceStateClassName';
+import { shallow } from 'zustand/shallow';
+import openVoiceModal from '@/lib/helpers/openVoiceModal';
 import Logo from './Logo';
 import Twemoji from './Twemoji';
 import NavLink from './NavLink';
@@ -78,7 +82,110 @@ const ControlBar = () => {
   );
 };
 
+const MeetingIndicator = () => {
+  const meeting = useVoice((s) => s.meeting);
+  const [deafened, state] = useVoice((s) => [s.deafened, s.state], shallow);
+  const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    if (!meeting) return;
+
+    const stateChangeHandler = ({ state: currentState }: { state: MeetingState }) => useVoice.setState({ state: currentState });
+
+    // @ts-expect-error Undocumented
+    meeting.on('meeting-state-changed', stateChangeHandler);
+
+    return () => {
+      // @ts-expect-error Undocumented
+      meeting.off('meeting-state-changed', stateChangeHandler);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meeting]);
+
+  if (!meeting) return null;
+
+  return (
+    <section
+      className="flex justify-between items-center gap-3 px-6 bg-cloudy-800 bg-opacity-75"
+    >
+      <section className={['flex gap-3 items-center', getVoiceStateClassName(state)].join(' ')}>
+        <FontAwesomeIcon
+          icon={faSignal}
+        />
+
+        <p
+          className="capitalize font-bold cursor-pointer hover:underline hover:underline-offset-1"
+          onClick={openVoiceModal}
+        >
+          {state.toLowerCase()}
+        </p>
+      </section>
+
+      <section className="flex gap-3">
+        <Tooltip
+          label={muted ? 'Unmute' : 'Mute'}
+          color="blue"
+          withArrow
+          arrowSize={6}
+          offset={10}
+        >
+          <FontAwesomeIcon
+            icon={muted ? faMicrophoneSlash : faMicrophone}
+            className="cursor-pointer text-cloudy-200 hover:text-cloudy-100 transition-colors duration-200 ease-in-out"
+            onClick={() => {
+              const toggle = !muted;
+
+              setMuted(toggle);
+
+              if (toggle) meeting.muteMic();
+              else meeting.unmuteMic();
+            }}
+          />
+        </Tooltip>
+
+        <Tooltip
+          label={deafened ? 'Undeafen' : 'Deafen'}
+          color="blue"
+          withArrow
+          arrowSize={6}
+          offset={10}
+        >
+          <FontAwesomeIcon
+            icon={deafened ? faEarDeaf : faEarListen}
+            className="cursor-pointer text-cloudy-200 hover:text-cloudy-100 transition-colors duration-200 ease-in-out"
+            onClick={() => {
+              const toggle = !deafened;
+
+              useVoice.setState({
+                deafened: toggle,
+              });
+            }}
+          />
+        </Tooltip>
+
+        <Tooltip
+          label="Leave"
+          color="red"
+          withArrow
+          arrowSize={6}
+          offset={10}
+        >
+          <FontAwesomeIcon
+            icon={faPhoneSlash}
+            className="cursor-pointer text-cloudy-200 hover:text-red-400 transition-colors duration-200 ease-in-out"
+            onClick={() => {
+              meeting.leave();
+            }}
+          />
+        </Tooltip>
+      </section>
+    </section>
+  );
+};
+
 export default function Layout({ children, innerHeader = (<section></section>) }: Props) {
+  const meeting = useVoice((s) => s.meeting);
+
   return (
     <IdleTimerProvider
       timeout={60_000}
@@ -90,7 +197,7 @@ export default function Layout({ children, innerHeader = (<section></section>) }
       </Portal>
 
       <main className="grid grid-cols-[20rem_1fr] h-screen w-screen relative overflow-hidden">
-        <section className="grid grid-rows-[3.5rem_1fr_6rem] w-full bg-cloudy-700 bg-opacity-80">
+        <section className={`grid ${!meeting ? 'grid-rows-[3.5rem_1fr_6rem]' : 'grid-rows-[3.5rem_1fr_4rem_6rem]'} w-full bg-cloudy-700 bg-opacity-80`}>
           <section className="shadow flex items-center px-4 w-full h-full">
             <Logo className="h-6" />
           </section>
@@ -124,8 +231,13 @@ export default function Layout({ children, innerHeader = (<section></section>) }
               </Tooltip>
             </section>
 
+
             <ChannelSelector />
           </section>
+
+          {meeting && (
+            <MeetingIndicator />
+          )}
 
           <ControlBar />
         </section>

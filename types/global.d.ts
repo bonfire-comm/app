@@ -50,12 +50,6 @@ declare global {
     image: string;
   }
 
-  interface ChannelVoiceData {
-    id?: string;
-    started: boolean;
-    participants: [];
-  }
-
   interface ChannelData {
     id: string;
     name: string;
@@ -67,8 +61,6 @@ declare global {
     pins: string[];
     createdAt: Date;
     bans: Record<string, boolean>;
-
-    voice: ChannelVoiceData;
   }
 
   interface ChannelInviteData {
@@ -109,7 +101,45 @@ declare global {
     date?: Date | null;
   }
 
+  interface VoiceTokenPayload {
+    token: string;
+    permissions: ('allow_join' | 'allow_mod')[];
+  }
+
+  interface RoomData {
+    roomId: string;
+    customRoomId: string;
+    userId: string;
+    disabled: boolean;
+    createdAt: string;
+    updatedAt: string;
+    id: string;
+  }
+
+  interface SessionParticipantData {
+    participantId: string;
+    name: string;
+    timelog: ({
+      start: string;
+      end: string;
+    })[];
+  }
+
+  interface SessionData {
+    id: string;
+    roomId: string;
+    start: string; // ISO string
+    end: string; // ISO string
+    participants: SessionParticipantData[];
+    status: 'ongoing' | 'ended';
+  }
+
+  type MeetingState = 'CONNECTING' | 'CONNECTED' | 'FAILED' | 'DISCONNECTED' | 'CLOSING' | 'CLOSED';
+
   type ChannelEventTypes = {
+    'voice-token': (data: VoiceTokenPayload) => void;
+    'voice-room-fetch': (data?: RoomData) => void;
+    'voice-session-fetch': (data: SessionData | null) => void;
     changed: (channel: Channel) => void;
     message: (message: Message) => void;
     [k: `message-${string}`]: (message: Message) => void;

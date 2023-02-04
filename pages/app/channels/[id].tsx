@@ -9,15 +9,15 @@ import Channel from '@/lib/classes/channel';
 import firebaseClient from '@/lib/firebase';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 import useUser from '@/lib/store/user';
-import { faAt, faGear, faPaperPlane, faPlus, faPlusCircle, faRightFromBracket, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faAt, faGear, faPaperPlane, faPhone, faPlus, faPlusCircle, faRightFromBracket, faUser } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
-import { useClipboard, useForceUpdate, useWindowEvent } from '@mantine/hooks';
+import { useClipboard, useForceUpdate, useInterval, useWindowEvent } from '@mantine/hooks';
 import type { Editor } from '@tiptap/core';
 import { useRouter } from 'next/router';
 import { MutableRefObject, useEffect, useReducer, useRef, useState } from 'react';
 import { useAsync } from 'react-use';
-import { LoadingOverlay, Tooltip } from '@mantine/core';
+import { Avatar, LoadingOverlay, Tooltip } from '@mantine/core';
 import Messages from '@/components/channel/MessageRenderer';
 import useEditMessage from '@/lib/store/editMessage';
 import Attachments, { DropArea } from '@/components/channel/AttachmentHandler';
@@ -35,6 +35,7 @@ import openLeaveGroupModal from '@/lib/helpers/openLeaveGroupModal';
 import useMenu from '@/lib/store/menu';
 import sleep from '@/lib/helpers/sleep';
 import { openConfirmModal } from '@mantine/modals';
+import useVoice from '@/lib/store/voice';
 
 const ToggleShowParticipant = () => {
   const [show, setShow] = useInternal((s) => [s.showParticipants, s.setShowParticipants], shallow);
@@ -57,10 +58,87 @@ const ToggleShowParticipant = () => {
 };
 
 const ControlIcons = ({ channel }: { channel?: Channel | null }) => {
+  const [val, forceRender] = useReducer((v) => v + 1, 0);
   const uid = useUser((s) => s?.id);
+  const [room, ongoing, meeting, SDK] = useVoice((s) => [s.room, s.ongoingSession, s.meeting, s.SDK], shallow);
+
+  useEffect(() => {
+    if (!meeting) return;
+
+    const updateHandler = () => {
+      forceRender();
+    };
+
+    meeting.on('participant-joined', updateHandler);
+    meeting.on('participant-left', updateHandler);
+
+    return () => {
+      meeting.off('participant-joined', updateHandler);
+      meeting.off('participant-left', updateHandler);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meeting]);
+
+  const interval = useInterval(async () => {
+    if (!channel) return;
+
+    const fetchOngoing = await channel.fetchVoiceOngoingSession().catch(() => null);
+
+    useVoice.setState({
+      ongoingSession: fetchOngoing,
+    });
+  }, 15_000);
+
+  useEffect(() => {
+    if (!channel) return;
+
+    const tokenHandler = (payload: VoiceTokenPayload) => {
+      if (typeof window === undefined) return;
+      SDK?.config(payload.token);
+    };
+
+    channel.events.on('voice-token', tokenHandler);
+
+    (async () => {
+      const fetchRoom = await channel.fetchVoiceRoom().catch(() => null);
+      const fetchOngoing = await channel.fetchVoiceOngoingSession().catch(() => null);
+
+      useVoice.setState({
+        room: fetchRoom,
+        ongoingSession: fetchOngoing,
+      });
+
+      interval.start();
+    })();
+
+    return () => {
+      channel.events.off('voice-token', tokenHandler);
+      interval.stop();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [SDK, channel]);
+
+  const voiceParticipants = useAsync(async () => {
+    if (!channel) return [];
+
+    if (ongoing && !meeting) {
+      const users = (await Promise.all(ongoing.participants.map((v) => firebaseClient.managers.user.fetch(v.participantId)))).filter(Boolean) as User[];
+
+      return users;
+    }
+
+    if (!meeting) return [];
+
+    const users = (await Promise.all([meeting.localParticipant.id, ...meeting.participants.keys()].map((v) => firebaseClient.managers.user.fetch(v)) ?? [])).filter(Boolean) as User[];
+    return users;
+  }, [channel, ongoing, meeting, val]);
+
+  const startVoiceChat = async () => {
+    await channel?.startVoice(true);
+  };
 
   return (
-    <section className="flex gap-4">
+    <section className="flex gap-4 items-center">
       {channel && channel.owner === uid && (
         <Tooltip
           label="Settings"
@@ -76,6 +154,46 @@ const ControlIcons = ({ channel }: { channel?: Channel | null }) => {
           />
         </Tooltip>
       )}
+
+      <section className="flex items-center gap-3">
+        {meeting && meeting.id === room?.roomId && voiceParticipants.value && voiceParticipants.value.length > 0 && (
+          <Avatar.Group>
+            {voiceParticipants.value.slice(0, 3).map((v) => (
+              <Tooltip
+                key={v.id}
+                position="bottom"
+                label={v.name}
+                color="blue"
+                withArrow
+                arrowSize={6}
+                offset={10}
+              >
+                <Avatar classNames={{ root: 'border-[2px] border-cloudy-700' }} size="md" src={v.image} radius="xl" />
+              </Tooltip>
+            ))}
+
+            {voiceParticipants.value.length > 3 && (
+              <Avatar color="gray">+{voiceParticipants.value.length - 3}</Avatar>
+            )}
+          </Avatar.Group>
+        )}
+
+        {(!meeting || meeting.id !== room?.roomId) && (
+          <Tooltip
+            label="Start Voice Chat"
+            color="blue"
+            withArrow
+            arrowSize={6}
+            offset={10}
+          >
+            <FontAwesomeIcon
+              icon={faPhone}
+              className={!room ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+              onClick={() => room && startVoiceChat()}
+            />
+          </Tooltip>
+        )}
+      </section>
 
       <ToggleShowParticipant />
 

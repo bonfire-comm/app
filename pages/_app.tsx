@@ -3,7 +3,7 @@ import '@/lib/firebase';
 
 import type { AppProps } from 'next/app';
 import { Big_Shoulders_Display as BigShouldersDisplay, Mulish } from '@next/font/google';
-import { MantineProvider, createEmotionCache } from '@mantine/core';
+import { MantineProvider, Portal, createEmotionCache } from '@mantine/core';
 import VideoBackground from '@/components/VideoBackground';
 import { AnimatePresence } from 'framer-motion';
 import useInternal from '@/lib/store';
@@ -11,6 +11,8 @@ import { NotificationsProvider } from '@mantine/notifications';
 import { useEffect } from 'react';
 import TokenCookieProvider from '@/components/TokenCookieProvider';
 import { ModalsProvider } from '@mantine/modals';
+import useVoice from '@/lib/store/voice';
+import { MeetingVoicePlayer } from '@/components/VoicePlayer';
 
 const bigShouldersDisplay = BigShouldersDisplay({
   subsets: ['latin'],
@@ -30,6 +32,15 @@ const cache = createEmotionCache({
 export default function App({ Component, pageProps, router }: AppProps) {
   useEffect(() => {
     document.body.classList.add(bigShouldersDisplay.variable, mulish.variable);
+
+    (async () => {
+      if (typeof window === 'undefined') return;
+
+      const { VideoSDK } = await import('@videosdk.live/js-sdk');
+      useVoice.setState({
+        SDK: VideoSDK
+      });
+    })();
   }, []);
 
   return (
@@ -104,6 +115,10 @@ export default function App({ Component, pageProps, router }: AppProps) {
       >
         <ModalsProvider>
           <TokenCookieProvider>
+            <Portal>
+              <MeetingVoicePlayer />
+            </Portal>
+
             <AnimatePresence
               mode="wait"
               onExitComplete={() => {

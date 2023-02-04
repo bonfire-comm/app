@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import EventEmitter from 'eventemitter3';
 import { clone, isEqual, noop } from 'lodash-es';
 import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, remove, serverTimestamp, set, update } from 'firebase/database';
@@ -9,6 +10,9 @@ import type ChannelManager from '../managers/channels';
 import Message from './message';
 import generateId from '../helpers/generateId';
 import useBuddies from '../store/buddies';
+import fetcher from '../api/fetcher';
+import useVoice from '../store/voice';
+import useUser from '../store/user';
 
 const MESSAGE_TRESHOLD = 10;
 const COOLDOWN_DURATION = 5000;
@@ -28,8 +32,6 @@ export default class Channel extends BaseStruct implements ChannelData {
 
   createdAt: Date;
 
-  voice: ChannelVoiceData;
-
   isDM: boolean;
 
   owner?: string | undefined;
@@ -39,6 +41,12 @@ export default class Channel extends BaseStruct implements ChannelData {
   previewMessage: ChannelMessageData | null = null;
 
   bans: Record<string, boolean>;
+
+  voiceToken?: string;
+
+  voiceRoom?: RoomData;
+
+  protected timeFetchVoiceToken: Date | null = null;
 
   private messagesUnsubscriber = noop;
 
@@ -62,7 +70,6 @@ export default class Channel extends BaseStruct implements ChannelData {
     this.participants = data.participants;
     this.pins = data.pins;
     this.createdAt = data.createdAt;
-    this.voice = data.voice;
     this.isDM = data.isDM;
     this.owner = data.owner;
     this.bans = data.bans;
@@ -161,6 +168,132 @@ export default class Channel extends BaseStruct implements ChannelData {
     this.messages.length = 0;
   }
 
+  async fetchVoiceOngoingSession(cancelSignal?: AbortSignal) {
+    if (!this.isVoiceTokenValid) await this.getVoiceToken(cancelSignal);
+
+    const ongoing = await fetcher<SemanticResponse<SessionData | null>>('/voice/ongoing', {
+      method: 'GET',
+      params: {
+        channel: this.id,
+        token: window.encodeURIComponent(this.voiceToken!),
+      },
+      signal: cancelSignal
+    });
+
+    this.events.emit('voice-session-fetch', ongoing.data.payload ?? null);
+
+    return ongoing.data.payload ?? null;
+  }
+
+  async fetchVoiceRoom(cancelSignal?: AbortSignal) {
+    if (this.voiceRoom) return this.voiceRoom;
+    if (!this.isVoiceTokenValid) await this.getVoiceToken(cancelSignal);
+
+    const validate = await fetcher<SemanticResponse<RoomData>>('/voice/validate', {
+      method: 'GET',
+      params: {
+        channel: this.id,
+        token: window.encodeURIComponent(this.voiceToken!),
+      },
+      signal: cancelSignal
+    }).catch(() => null);
+
+    if (validate && validate.data.payload) {
+      this.voiceRoom = validate.data.payload;
+
+      this.events.emit('voice-room-fetch', validate.data.payload);
+
+      return validate.data.payload;
+    }
+
+    const create = await fetcher<SemanticResponse<RoomData>>('/voice/create', {
+      method: 'POST',
+      data: {
+        channel: this.id,
+        token: window.encodeURIComponent(this.voiceToken!),
+      },
+      signal: cancelSignal
+    });
+
+    this.voiceRoom = create.data.payload;
+
+    this.events.emit('voice-room-fetch', create.data.payload);
+
+    return create.data.payload;
+  }
+
+  async getVoiceToken(cancelSignal?: AbortSignal) {
+    if (this.isVoiceTokenValid) {
+      return this.voiceToken;
+    }
+
+    const fetched = await fetcher<SemanticResponse<VoiceTokenPayload>>('/voice/token', {
+      method: 'GET',
+      params: {
+        channel: this.id,
+      },
+      signal: cancelSignal
+    }).catch(() => null);
+
+    if (!fetched || !fetched.data.payload) return;
+
+    this.timeFetchVoiceToken = new Date();
+    this.voiceToken = fetched.data.payload.token;
+
+    this.events.emit('voice-token', fetched.data.payload);
+
+    return this.voiceToken;
+  }
+
+  get isVoiceTokenValid() {
+    return this.voiceToken && this.timeFetchVoiceToken && this.timeFetchVoiceToken.getTime() - Date.now() < 6 * 60 * 1000; // 6h
+  }
+
+  async startVoice(joinImmediately = false) {
+    const { SDK, meeting: currentMeeting } = useVoice.getState();
+    const user = useUser.getState();
+
+    if (!SDK || !user || !user.name || !this.voiceToken) return;
+    if (!this.voiceRoom) await this.fetchVoiceRoom();
+
+    if (currentMeeting) {
+      currentMeeting.leave();
+    }
+
+    const meeting = SDK.initMeeting({
+      meetingId: this.voiceRoom!.roomId,
+      name: user.name,
+      participantId: user.id,
+      micEnabled: false,
+      webcamEnabled: false,
+      token: this.voiceToken as string,
+    });
+
+    const connectionCloseHandler = ({ state }: { state: MeetingState }) => {
+      if (state === 'CLOSED') {
+        useVoice.setState({
+          meeting: null
+        });
+
+        // @ts-expect-error Undocumentec
+        meeting.off('meeting-state-changed', connectionCloseHandler);
+      }
+    };
+
+    // @ts-expect-error Undocumentec
+    meeting.on('meeting-state-changed', connectionCloseHandler);
+
+    useVoice.setState({
+      meeting,
+    });
+
+    if (joinImmediately) {
+      meeting.join();
+    }
+
+    return meeting;
+  }
+
   async leave() {
     if (!firebaseClient.auth.currentUser) return;
 
@@ -175,7 +308,6 @@ export default class Channel extends BaseStruct implements ChannelData {
     this.participants = data.participants;
     this.pins = data.pins;
     this.createdAt = data.createdAt;
-    this.voice = data.voice;
     this.isDM = data.isDM;
     this.owner = data.owner;
   }
@@ -403,7 +535,6 @@ export default class Channel extends BaseStruct implements ChannelData {
         description: this.description ?? null,
         participants: this.participants,
         pins: this.pins,
-        voice: this.voice,
         isDM: this.isDM,
         owner: this.owner ?? null,
         bans: this.bans
@@ -423,7 +554,6 @@ export default class Channel extends BaseStruct implements ChannelData {
       description: this.description,
       participants: this.participants,
       pins: this.pins,
-      voice: this.voice,
       isDM: this.isDM,
       owner: this.owner,
       bans: this.bans

@@ -10,5 +10,8 @@ declare namespace NodeJS {
     NEXT_PUBLIC_DATABASE_URL: string;
 
     FIREBASE_SERVICE_ACCOUNT_KEY: string;
+
+    VIDEOSDK_KEY: string;
+    VIDEOSDK_SECRET: string;
   }
 }
