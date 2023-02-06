@@ -209,7 +209,7 @@ export default function App({ user }: { user: UserData }) {
         {activeTab === 'add' && <AddBuddyTab />}
         {activeTab === 'pending' && <PendingBuddies data={buddiesData} />}
         {activeTab !== 'add' && activeTab !== 'pending' && (
-          <section className="p-6 relative">
+          <section className="p-6 relative flex flex-col gap-2">
             <h3 className="font-extrabold uppercase mb-2">{activeTab}</h3>
 
             {buddiesData.length > 0 && buddiesData.map((u) => <UserList user={u} key={u.id} />)}

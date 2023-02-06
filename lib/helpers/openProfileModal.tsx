@@ -134,15 +134,15 @@ const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { use
 };
 
 export default async function openProfileModal(user: User) {
-  const bannerColor = await loadImage(user.image).then(getSignificantColor);
+  const bannerColor = await loadImage(user.image).then(getSignificantColor).catch(() => null);
 
   openModal({
     centered: true,
-    children: <ProfileModalContent bannerColor={bannerColor.color} tone={bannerColor.tone} user={user} />,
+    children: <ProfileModalContent bannerColor={bannerColor?.color} tone={bannerColor?.tone} user={user} />,
     classNames: {
       modal: 'p-0 relative overflow-hidden rounded-lg',
       header: 'absolute top-0 left-0 right-0 w-full p-3',
-      close: `block z-20 grid place-items-center ${bannerColor.tone === 'light' ? 'text-cloudy-900' : 'text-cloudy-100'}`,
+      close: `block z-20 grid place-items-center ${bannerColor?.tone === 'light' ? 'text-cloudy-900' : 'text-cloudy-100'}`,
     },
     zIndex: 1000000000
   });
