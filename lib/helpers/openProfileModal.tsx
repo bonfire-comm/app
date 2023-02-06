@@ -8,6 +8,7 @@ import { DateTime } from 'luxon';
 import { useRouter } from 'next/router';
 import { showNotification } from '@mantine/notifications';
 import Twemoji from '@/components/Twemoji';
+import { useAsync } from 'react-use';
 import User from '../classes/user';
 import loadImage from './loadImage';
 import getSignificantColor from './getSignificantColor';
@@ -25,6 +26,8 @@ const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { use
   const router = useRouter();
   const createdDate = DateTime.fromJSDate(user.createdAt);
 
+  const isBuddy = useAsync(() => user.isBuddy(), [user]);
+
   return (
     <section>
       <section className="h-28" style={{ background: bannerColor }}></section>
@@ -36,7 +39,7 @@ const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { use
           <section className="flex justify-end h-8 gap-1">
             {!user.isSelf && (
               <>
-                {!user.isBuddy() && <Tooltip label="Add friend">
+                {!isBuddy.value && <Tooltip label="Add friend">
                   <ActionIcon
                     color="green"
                     variant="subtle"

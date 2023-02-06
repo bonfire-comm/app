@@ -20,7 +20,7 @@ export default function Onboarding() {
 
   const form = useForm({
     initialValues: {
-      image: null as File | Blob | null,
+      image: photo as File | Blob | string | null,
       name: ''
     },
     validateInputOnChange: true,
