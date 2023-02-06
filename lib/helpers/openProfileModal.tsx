@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import { openModal } from '@mantine/modals';
+import { closeModal, openModal } from '@mantine/modals';
 import { ActionIcon, Input, Tooltip } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faICursor, faPencil, faUserPlus } from '@fortawesome/free-solid-svg-icons';
@@ -53,7 +53,8 @@ const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { use
                         showNotification({
                           color: 'green',
                           title: <Twemoji>✅ Sent!</Twemoji>,
-                          message: 'Friend request sent!'
+                          message: 'Friend request sent!',
+                          className: 'z-[99999999999]'
                         });
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       } catch (e: any) {
@@ -61,7 +62,8 @@ const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { use
                           return showNotification({
                             color: 'orange',
                             title: <Twemoji>⚠️ Already pending!</Twemoji>,
-                            message: 'You already have a pending friend request with this user.'
+                            message: 'You already have a pending friend request with this user.',
+                            className: 'z-[99999999999]'
                           });
                         }
                       }
@@ -84,6 +86,7 @@ const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { use
                     if (!id) return;
 
                     router.push(`/app/channels/${id}`);
+                    closeModal('profile-modal');
                   }}
                 >
                   <FontAwesomeIcon
@@ -140,6 +143,7 @@ export default async function openProfileModal(user: User) {
   const bannerColor = await loadImage(user.image).then(getSignificantColor).catch(() => null);
 
   openModal({
+    modalId: 'profile-modal',
     centered: true,
     children: <ProfileModalContent bannerColor={bannerColor?.color} tone={bannerColor?.tone} user={user} />,
     classNames: {
@@ -147,6 +151,6 @@ export default async function openProfileModal(user: User) {
       header: 'absolute top-0 left-0 right-0 w-full p-3',
       close: `block z-20 grid place-items-center ${bannerColor?.tone === 'light' ? 'text-cloudy-900' : 'text-cloudy-100'}`,
     },
-    zIndex: 1000000000
+    zIndex: 1000000
   });
 }
