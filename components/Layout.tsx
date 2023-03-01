@@ -1,5 +1,5 @@
 import firebaseClient from '@/lib/firebase';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
 import { ActionIcon, Divider, Menu, Portal, Tooltip } from '@mantine/core';
@@ -12,7 +12,8 @@ import openCreateChannelModal from '@/lib/helpers/openCreateChannelModal';
 import useVoice from '@/lib/store/voice';
 import getVoiceStateClassName from '@/lib/helpers/getVoiceStateClassName';
 import { shallow } from 'zustand/shallow';
-import openVoiceModal from '@/lib/helpers/openVoiceModal';
+import { useAsync } from 'react-use';
+import Link from 'next/link';
 import Logo from './Logo';
 import Twemoji from './Twemoji';
 import NavLink from './NavLink';
@@ -83,9 +84,8 @@ const ControlBar = () => {
 };
 
 const MeetingIndicator = () => {
-  const meeting = useVoice((s) => s.meeting);
-  const [deafened, state] = useVoice((s) => [s.deafened, s.state], shallow);
-  const [muted, setMuted] = useState(true);
+  const [meeting, activeChannelId] = useVoice((s) => [s.meeting, s.activeChannelId], shallow);
+  const [deafened, state, muted] = useVoice((s) => [s.deafened, s.state, s.muted], shallow);
 
   useEffect(() => {
     if (!meeting) return;
@@ -102,23 +102,37 @@ const MeetingIndicator = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meeting]);
 
+  const channel = useAsync(async () => {
+    if (!activeChannelId) return null;
+
+    return firebaseClient.managers.channels.fetch(activeChannelId);
+  }, [activeChannelId]);
+
+  const name = useAsync(async () => channel.value?.resolveName(), [channel]);
+
   if (!meeting) return null;
 
   return (
     <section
       className="flex justify-between items-center gap-3 px-6 bg-cloudy-800 bg-opacity-75"
     >
-      <section className={['flex gap-3 items-center', getVoiceStateClassName(state)].join(' ')}>
+      <section className={['flex gap-4 items-center', getVoiceStateClassName(state)].join(' ')}>
         <FontAwesomeIcon
           icon={faSignal}
         />
 
-        <p
-          className="capitalize font-bold cursor-pointer hover:underline hover:underline-offset-1"
-          onClick={openVoiceModal}
-        >
-          {state.toLowerCase()}
-        </p>
+        <section className="leading-tight flex flex-col">
+          <Link
+            className="capitalize font-bold cursor-pointer hover:underline hover:underline-offset-1"
+            href={`/app/channels/${channel.value?.id}/call`}
+          >
+            {state.toLowerCase()}
+          </Link>
+
+          <Link className="text-white opacity-75" href={`/app/channels/${channel.value?.id}`}>
+            {name.value}
+          </Link>
+        </section>
       </section>
 
       <section className="flex gap-3">
@@ -135,7 +149,7 @@ const MeetingIndicator = () => {
             onClick={() => {
               const toggle = !muted;
 
-              setMuted(toggle);
+              useVoice.setState({ muted: toggle });
 
               if (toggle) meeting.muteMic();
               else meeting.unmuteMic();
@@ -242,7 +256,7 @@ export default function Layout({ children, innerHeader = (<section></section>) }
           <ControlBar />
         </section>
 
-        <section className="grid grid-rows-[3.5rem_1fr] bg-cloudy-600 bg-opacity-80 overflow-hidden">
+        <section className="grid grid-rows-[3.5rem_1fr] bg-cloudy-600 bg-opacity-80 overflow-hidden relative">
           <section className="shadow w-full h-full">
             {innerHeader}
           </section>

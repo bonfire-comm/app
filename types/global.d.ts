@@ -86,6 +86,7 @@ declare global {
     createdAt: Date;
     editedAt?: Date | null;
     attachments?: ChannelMessageAttachmentData[] | null;
+    replyTo?: string | null;
   }
 
   interface EmbedData {

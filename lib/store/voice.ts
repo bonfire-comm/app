@@ -9,8 +9,11 @@ const useVoice = create(
     ongoingSession: null as SessionData | null,
     meeting: null as Meeting | null,
     SDK: null as typeof VideoSDK | null,
+    activeChannelId: null as string | null,
 
     deafened: false,
+    muted: false,
+    video: false,
     state: 'CONNECTING' as MeetingState,
     activeTalker: null as string | null,
   }, (set) => ({

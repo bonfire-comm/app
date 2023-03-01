@@ -9,7 +9,7 @@ import Channel from '@/lib/classes/channel';
 import firebaseClient from '@/lib/firebase';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 import useUser from '@/lib/store/user';
-import { faAt, faGear, faPaperPlane, faPhone, faPlus, faPlusCircle, faRightFromBracket, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faAt, faGear, faHashtag, faPaperPlane, faPhone, faPlus, faPlusCircle, faRightFromBracket, faUser } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
 import { useClipboard, useForceUpdate, useInterval, useWindowEvent } from '@mantine/hooks';
@@ -19,7 +19,7 @@ import { MutableRefObject, useEffect, useReducer, useRef, useState } from 'react
 import { useAsync } from 'react-use';
 import { Avatar, LoadingOverlay, Tooltip } from '@mantine/core';
 import Messages from '@/components/channel/MessageRenderer';
-import useEditMessage from '@/lib/store/editMessage';
+import useMessageAction from '@/lib/store/messageAction';
 import Attachments, { DropArea } from '@/components/channel/AttachmentHandler';
 import { showNotification } from '@mantine/notifications';
 import Twemoji from '@/components/Twemoji';
@@ -92,13 +92,6 @@ const ControlIcons = ({ channel }: { channel?: Channel | null }) => {
   useEffect(() => {
     if (!channel) return;
 
-    const tokenHandler = (payload: VoiceTokenPayload) => {
-      if (typeof window === undefined) return;
-      SDK?.config(payload.token);
-    };
-
-    channel.events.on('voice-token', tokenHandler);
-
     (async () => {
       const fetchRoom = await channel.fetchVoiceRoom().catch(() => null);
       const fetchOngoing = await channel.fetchVoiceOngoingSession().catch(() => null);
@@ -112,7 +105,6 @@ const ControlIcons = ({ channel }: { channel?: Channel | null }) => {
     })();
 
     return () => {
-      channel.events.off('voice-token', tokenHandler);
       interval.stop();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -188,7 +180,7 @@ const ControlIcons = ({ channel }: { channel?: Channel | null }) => {
           >
             <FontAwesomeIcon
               icon={faPhone}
-              className={!room ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+              className={!room ? 'cursor-progress opacity-50' : 'cursor-pointer'}
               onClick={() => room && startVoiceChat()}
             />
           </Tooltip>
@@ -216,32 +208,22 @@ const ControlIcons = ({ channel }: { channel?: Channel | null }) => {
   );
 };
 
-const DMInnerHeader = ({ channel }: { channel: Channel }) => {
-  const currentUserId = useUser((state) => state?.id);
-  const user = useAsync(async () => {
-    if (!currentUserId) return;
-
-    const [participant] = Object.keys(channel.participants).filter((v) => v !== currentUserId);
-
-    const resolved = await firebaseClient.managers.user.fetch(participant);
-    return resolved;
-  }, [channel, currentUserId]);
-
-  if (user.loading || !user.value) return null;
+const InnerHeader = ({ channel }: { channel: Channel }) => {
+  const name = useAsync(async () => channel.resolveName());
 
   return (
     <>
-      <Meta page={`${user.value.name}'s chat`} />
+      <Meta page={name.loading ? 'Loading chat...' : `${name.value}'s chat`} />
 
       <section className="flex justify-between items-center flex-grow">
         <section className="flex gap-3 items-center">
           <FontAwesomeIcon
-            icon={faAt}
+            icon={channel.isDM ? faAt : faHashtag}
             size="lg"
             className="text-cloudy-300"
           />
 
-          <h2 className="font-extrabold text-lg">{user.value.name}</h2>
+          <h2 className="font-extrabold text-lg">{name.value}</h2>
         </section>
 
         <ControlIcons channel={channel} />
@@ -249,20 +231,6 @@ const DMInnerHeader = ({ channel }: { channel: Channel }) => {
     </>
   );
 };
-
-const InnerHeader = ({ channel }: { channel?: Channel | null }) => (
-  <>
-    <Meta page={`${channel?.name}'s chat`} />
-
-    <section className="flex justify-between items-center flex-grow">
-      <section className="flex gap-3 items-center">
-        <h2 className="font-extrabold text-lg">{channel?.name}</h2>
-      </section>
-
-      <ControlIcons channel={channel} />
-    </section>
-  </>
-);
 
 const MAX_CHARACTER = 2000;
 
@@ -283,9 +251,9 @@ const CharacterCounter = ({ editor, forceUpdateRef }: { editor: MutableRefObject
   );
 };
 
-const Header = ({ channel }: { channel?: Channel | null }) => (
+const Header = ({ channel }: { channel: Channel }) => (
   <section className="flex px-6 items-center h-full w-full">
-    {channel?.isDM ? <DMInnerHeader channel={channel} /> : <InnerHeader channel={channel} />}
+    <InnerHeader channel={channel} />
   </section>
 );
 
@@ -446,7 +414,7 @@ export default function ChannelPage() {
   const [channel, setChannel] = useState<Channel | null>(firebaseClient.managers.channels.cache.get(router.query.id as string) ?? null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
-  const editMessage = useEditMessage();
+  const messageAction = useMessageAction();
   const openRef = useRef<() => void>(noop);
   const characterCountRender = useRef<() => void>(noop);
   const showParticipants = useInternal((s) => s.showParticipants);
@@ -509,18 +477,18 @@ export default function ChannelPage() {
 
     setSending(true);
 
-    if (editMessage.editing) {
-      await editMessage.message?.set({
+    if (messageAction.editing) {
+      await messageAction.message?.set({
         content
       }).commit(true);
-
-      useEditMessage.setState({
-        editing: false,
-        message: null
-      });
     } else {
       try {
-        await channel.postMessage(trimEmptyParagraphTag(content), attachments);
+        await channel.postMessage(trimEmptyParagraphTag(content), {
+          attachments,
+          replyTo: messageAction.replying && messageAction.message
+            ? messageAction.message.id
+            : null
+        });
       } catch (err: any) {
         setSending(false);
 
@@ -557,6 +525,9 @@ export default function ChannelPage() {
           });
         }
 
+        // eslint-disable-next-line no-console
+        console.error(err);
+
         return showNotification({
           color: 'red',
           title: <Twemoji>❌ Error</Twemoji>,
@@ -564,6 +535,12 @@ export default function ChannelPage() {
         });
       }
     }
+
+    useMessageAction.setState({
+      editing: false,
+      replying: false,
+      message: null
+    });
 
     editorRef.current?.commands.clearContent();
     setAttachments([]);
@@ -582,8 +559,8 @@ export default function ChannelPage() {
   });
 
   useWindowEvent('keyup', ({ key }) => {
-    if (key === 'Escape' && useEditMessage.getState().editing) {
-      useEditMessage.setState({
+    if (key === 'Escape' && useMessageAction.getState().editing) {
+      useMessageAction.setState({
         editing: false,
         message: null
       });
@@ -593,10 +570,20 @@ export default function ChannelPage() {
   });
 
   useEffect(() => {
-    if (!editMessage.editing || !editMessage.message || !editorRef.current) return;
+    if (!messageAction.editing || !messageAction.message || !editorRef.current) return;
 
-    editorRef.current.commands.setContent(editMessage.message.content);
-  }, [editorRef, editMessage]);
+    editorRef.current.commands.setContent(messageAction.message.content);
+  }, [editorRef, messageAction]);
+
+  const messageActionAuthor = useAsync(async () => {
+    if (!messageAction?.message?.author) return null;
+
+    const user = await firebaseClient.managers.user.fetch(messageAction.message.author);
+
+    return user;
+  }, [messageAction.message]);
+
+  if (!channel) return null;
 
   return (
     <Layout
@@ -613,12 +600,21 @@ export default function ChannelPage() {
           )}
 
           <section className="flex-shrink-0 flex flex-col p-6 pt-4 min-h-[6rem] w-full">
-            {editMessage.editing && (
+            {messageAction.editing && (
               <section className="mb-2 flex gap-2 items-center">
                 <span className="text-cloudy-100 font-medium">Editing message</span>
                 <span onClick={() => {
-                  useEditMessage.setState({ editing: false, message: null });
+                  useMessageAction.setState({ editing: false, message: null });
                   editorRef.current?.commands.clearContent();
+                }} className="text-blue-500 cursor-pointer">cancel</span>
+              </section>
+            )}
+
+            {messageAction.replying && (
+              <section className="mb-2 flex gap-2 items-center">
+                <span className="text-cloudy-100 font-medium">Replying to <span className="font-bold">{messageActionAuthor.value?.name}</span></span>
+                <span onClick={() => {
+                  useMessageAction.setState({ replying: false, message: null });
                 }} className="text-blue-500 cursor-pointer">cancel</span>
               </section>
             )}

@@ -13,6 +13,7 @@ export default function coupleMessages(messages: Message[]) {
         message.author === lastMessage.author
         && message.createdAt.getTime() - lastMessage.createdAt.getTime() <= 1000 * 60 * 5
         && last.length < 10
+        && !message.replyTo
       ) {
         last.push(message);
       } else {

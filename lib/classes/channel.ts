@@ -242,6 +242,11 @@ export default class Channel extends BaseStruct implements ChannelData {
 
     this.events.emit('voice-token', fetched.data.payload);
 
+    const { SDK } = useVoice.getState();
+    if (SDK && typeof window !== 'undefined') {
+      SDK.config(fetched.data.payload.token);
+    }
+
     return this.voiceToken;
   }
 
@@ -250,10 +255,11 @@ export default class Channel extends BaseStruct implements ChannelData {
   }
 
   async startVoice(joinImmediately = false) {
-    const { SDK, meeting: currentMeeting } = useVoice.getState();
+    const { SDK, meeting: currentMeeting, muted } = useVoice.getState();
     const user = useUser.getState();
 
-    if (!SDK || !user || !user.name || !this.voiceToken) return;
+    if (!SDK || !user || !user.name) return;
+    if (!this.voiceToken || !this.isVoiceTokenValid) await this.getVoiceToken();
     if (!this.voiceRoom) await this.fetchVoiceRoom();
 
     if (currentMeeting) {
@@ -264,7 +270,7 @@ export default class Channel extends BaseStruct implements ChannelData {
       meetingId: this.voiceRoom!.roomId,
       name: user.name,
       participantId: user.id,
-      micEnabled: false,
+      micEnabled: !muted,
       webcamEnabled: false,
       token: this.voiceToken as string,
     });
@@ -292,6 +298,7 @@ export default class Channel extends BaseStruct implements ChannelData {
     meeting.on('speaker-changed', speakerChangedHandler);
 
     useVoice.setState({
+      activeChannelId: this.id,
       meeting,
       state: 'CONNECTING',
     });
@@ -332,7 +339,19 @@ export default class Channel extends BaseStruct implements ChannelData {
     return firebaseClient.managers.user.fetch(uid);
   }
 
-  async postMessage(content: string, attachments?: File[]) {
+  async resolveName() {
+    if (!this.isDM) return this.name;
+
+    const currentUserId = useUser.getState()?.id;
+    if (!currentUserId) return null;
+
+    const [participant] = Object.keys(this.participants).filter((v) => v !== currentUserId);
+
+    const resolved = await firebaseClient.managers.user.fetch(participant);
+    return resolved?.name ?? null;
+  }
+
+  async postMessage(content: string, { attachments,replyTo }: { attachments?: File[]; replyTo?: string | null }) {
     const id = push(ref(firebaseClient.rtdb, `channels/${this.id}/messages`)).key;
     if (!id || !firebaseClient.auth.currentUser) return;
 
@@ -385,7 +404,8 @@ export default class Channel extends BaseStruct implements ChannelData {
       content,
       author: firebaseClient.auth.currentUser.uid,
       createdAt: serverTimestamp(),
-      attachments: [] as ChannelMessageAttachmentData[]
+      attachments: [] as ChannelMessageAttachmentData[],
+      replyTo
     };
 
     if (attachments && attachments.length > 0) {

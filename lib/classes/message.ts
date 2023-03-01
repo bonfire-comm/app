@@ -17,6 +17,8 @@ export default class Message extends BaseStruct implements ChannelMessageData {
 
   attachments?: ChannelMessageAttachmentData[] | null = null;
 
+  replyTo?: string | null;
+
   readonly channel: Channel;
 
   constructor(data: ChannelMessageData, channel: Channel) {
@@ -27,6 +29,7 @@ export default class Message extends BaseStruct implements ChannelMessageData {
     this.content = data.content;
     this.createdAt = data.createdAt;
     this.editedAt = data.editedAt;
+    this.replyTo = data.replyTo;
     this.attachments = data.attachments;
 
     this.channel = channel;

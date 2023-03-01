@@ -5,8 +5,8 @@ import firebaseClient from '@/lib/firebase';
 import coupleMessages from '@/lib/helpers/coupleMessages';
 import download from '@/lib/helpers/download';
 import fetchEmbed from '@/lib/helpers/fetchEmbed';
-import useEditMessage from '@/lib/store/editMessage';
-import { faDownload, faFile, faIdCard, faPencil, faTrash, faUserPen } from '@fortawesome/free-solid-svg-icons';
+import useMessageAction from '@/lib/store/messageAction';
+import { faArrowRight, faDownload, faFile, faIdCard, faPencil, faReply, faTrash, faUserPen } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Tooltip } from '@mantine/core';
 import { IMAGE_MIME_TYPE } from '@mantine/dropzone';
@@ -17,6 +17,7 @@ import { useAsync } from 'react-use';
 import { uniq } from 'lodash-es';
 import highlightElement from '@/lib/helpers/highlightElement';
 import openProfileModal from '@/lib/helpers/openProfileModal';
+import sleep from '@/lib/helpers/sleep';
 import Embed from '../Embed';
 
 const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentData}) => {
@@ -101,9 +102,13 @@ const ActionPopOver = ({ message }: { message: Message }) => {
 
   return (
     <section className="hidden group-hover:block absolute right-4 -top-2 bg-cloudy-500 overflow-hidden rounded-lg border-[1px] border-cloudy-400 border-opacity-50">
+      <span onClick={() => useMessageAction.setState({ replying: true, editing: false, message })} className="cursor-pointer p-2 hover:bg-cloudy-600">
+        <FontAwesomeIcon icon={faReply} size="sm" />
+      </span>
+
       {message.author === firebaseClient.auth.currentUser?.uid && (
         <>
-          <span onClick={() => useEditMessage.setState({ editing: true, message })} className="cursor-pointer p-2 hover:bg-cloudy-600">
+          <span onClick={() => useMessageAction.setState({ editing: true, replying: false, message })} className="cursor-pointer p-2 hover:bg-cloudy-600">
             <FontAwesomeIcon icon={faPencil} size="sm" />
           </span>
 
@@ -116,6 +121,60 @@ const ActionPopOver = ({ message }: { message: Message }) => {
       <span onClick={() => clipboard.copy(message.id)} className="cursor-pointer p-2 hover:bg-cloudy-600">
         <FontAwesomeIcon icon={faIdCard} size="sm" />
       </span>
+    </section>
+  );
+};
+
+const ReplyIndicator = ({ message, channel }: { message: Message; channel: Channel }) => {
+  const replyTo = useAsync(async () => {
+    if (!message.replyTo) return null;
+
+    return channel.fetchMessage(message.replyTo);
+  }, [message.replyTo]);
+
+  const user = useAsync(async () => {
+    if (!replyTo.value) return null;
+
+    const u = await firebaseClient.managers.user.fetch(replyTo.value.author);
+
+    return u;
+  }, [replyTo.value]);
+
+  const scrollToView = async () => {
+    if (!replyTo.value) return;
+
+    const container = document.querySelector('#messages_container') satisfies HTMLDivElement | null;
+    const el = document.querySelector(`#${replyTo.value.id}`) satisfies HTMLDivElement | null;
+    if (!el || !container) return;
+
+    container.scrollTo({
+      behavior: 'smooth',
+      top: el.offsetTop - container.offsetTop - 100,
+    });
+
+    await sleep(300);
+
+    el.classList.add('bg-cloudy-500');
+
+    await sleep(1000);
+
+    el.classList.remove('bg-cloudy-500');
+  };
+
+  return (
+    <section className="flex gap-4 mb-3 opacity-50">
+      <span className="flex items-center justify-center w-12">
+        <FontAwesomeIcon icon={faArrowRight} />
+      </span>
+
+      <section className="flex gap-3">
+        <section className="flex gap-2">
+          <img src={user.value?.image} alt="" className="w-6 rounded-full aspect-square" />
+          <h4 className="font-bold">{user.value?.name}</h4>
+        </section>
+
+        <p className="cursor-pointer whitespace-nowrap break-keep text-ellipsis" onClick={scrollToView}>{replyTo.value?.content?.replace(/<p>/g, '')?.replace(/<\/p>/g, '')}</p>
+      </section>
     </section>
   );
 };
@@ -180,48 +239,52 @@ const MessageEntry = memo(({ message, channel, editingMessage }: { message: Mess
   }, [message, contentRef, val]);
 
   return (
-    <section id={message.id} className={['group relative px-6 py-1 flex items-start gap-4', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
+    <section id={message.id} className={['group relative px-6 py-1 transition-colors ease-out duration-200', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
+      {message.replyTo && <ReplyIndicator message={message} channel={channel} />}
+
       <ActionPopOver message={message} />
 
-      <img onClick={openProfile} src={user.value?.image} alt="" className="w-12 rounded-full cursor-pointer" />
-
-      <section className="flex-grow">
-        <section className="flex gap-3 items-end mb-[2px]">
-          <h3 onClick={openProfile} className="font-extrabold hover:underline hover:underline-offset-1 cursor-pointer">{user.value?.name}</h3>
-
-          {message.createdAt && (
-            <p className="text-cloudy-300 text-sm">
-              {DateTime.local().diff(createdTime, 'days').days < 1
-                ? (
-                  <>
-                    <span className="capitalize">{createdTime.toRelativeCalendar()}</span>
-                    {' at '}
-                  </>
-                )
-                : `${createdTime.toLocaleString(DateTime.DATE_SHORT) } `
-              }
-              <span className="capitalize">{createdTime.toLocaleString(DateTime.TIME_SIMPLE)}</span>
-            </p>
-          )}
-        </section>
+      <section className="flex items-start gap-4">
+        <img onClick={openProfile} src={user.value?.image} alt="" className="w-12 rounded-full cursor-pointer" />
 
         <section className="flex-grow">
-          <section
-            ref={contentRef}
-            className="user_message break-all whitespace-pre-line"
-            dangerouslySetInnerHTML={{ __html: message.content }}
-          />
+          <section className="flex gap-3 items-end mb-[2px]">
+            <h3 onClick={openProfile} className="font-extrabold hover:underline hover:underline-offset-1 cursor-pointer">{user.value?.name}</h3>
 
-          {message.editedAt && <EditedMark editedAt={message.editedAt} />}
+            {message.createdAt && (
+              <p className="text-cloudy-300 text-sm">
+                {DateTime.local().diff(createdTime, 'days').days < 1
+                  ? (
+                    <>
+                      <span className="capitalize">{createdTime.toRelativeCalendar()}</span>
+                      {' at '}
+                    </>
+                  )
+                  : `${createdTime.toLocaleString(DateTime.DATE_SHORT) } `
+                }
+                <span className="capitalize">{createdTime.toLocaleString(DateTime.TIME_SIMPLE)}</span>
+              </p>
+            )}
+          </section>
+
+          <section className="flex-grow">
+            <section
+              ref={contentRef}
+              className="user_message break-all whitespace-pre-line"
+              dangerouslySetInnerHTML={{ __html: message.content }}
+            />
+
+            {message.editedAt && <EditedMark editedAt={message.editedAt} />}
+          </section>
+
+          <EmbedRenderer contentRef={contentRef} content={message.content} />
+
+          {message.attachments?.length && <Attachments attachments={message.attachments} />}
         </section>
-
-        <EmbedRenderer contentRef={contentRef} content={message.content} />
-
-        {message.attachments?.length && <Attachments attachments={message.attachments} />}
       </section>
     </section>
   );
-});
+}, (prev, next) => prev.message.id === next.message.id && prev.editingMessage?.id === next.editingMessage?.id);
 
 MessageEntry.displayName = 'MessageEntry';
 
@@ -248,11 +311,11 @@ const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { messa
   }, [message, contentRef, val]);
 
   return (
-    <section id={message.id} className={['group relative px-6 py-1 flex gap-4 items-center', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
+    <section id={message.id} className={['group relative px-6 py-1 flex gap-4 items-center transition-colors ease-out duration-200', editingMessage?.id === message.id ? 'bg-cloudy-500 bg-opacity-50' : 'hover:bg-cloudy-700 hover:bg-opacity-50'].join(' ')}>
       <ActionPopOver message={message} />
 
       <section className="w-12 flex items-center justify-center h-full select-none flex-shrink-0">
-        <p className="text-xs text-cloudy-400 hidden group-hover:block">{createdTime.toLocaleString(DateTime.TIME_SIMPLE)}</p>
+        <p className="text-xs text-cloudy-400 hidden group-hover:block whitespace-nowrap">{createdTime.toLocaleString(DateTime.TIME_SIMPLE)}</p>
       </section>
 
       <section className="flex-grow">
@@ -272,12 +335,12 @@ const HeadlessMessageEntry = memo(({ message, channel, editingMessage }: { messa
       </section>
     </section>
   );
-});
+}, (prev, next) => prev.message.id === next.message.id && prev.editingMessage?.id === next.editingMessage?.id);
 
 HeadlessMessageEntry.displayName = 'HeadlessMessageEntry';
 
 const Messages = ({ channel }: { channel?: Channel | null }) => {
-  const editingMessage = useEditMessage((s) => s.message);
+  const editingMessage = useMessageAction((s) => s.message);
   const lockScroll = useRef<boolean>(true);
   const messagesRef = createRef<HTMLDivElement>();
   const [coupledMessages, setCoupledMessages] = useState<Message[][]>([]);
@@ -314,7 +377,7 @@ const Messages = ({ channel }: { channel?: Channel | null }) => {
   });
 
   return (
-    <section ref={messagesRef} onScroll={onScroll} className="flex-grow gap-4 flex flex-col overflow-y-auto custom_scrollbar mr-1 mt-1">
+    <section id="messages_container" ref={messagesRef} onScroll={onScroll} className="flex-grow gap-4 flex flex-col overflow-y-auto custom_scrollbar mr-1 mt-1">
       <section className="min-h-[300px] flex-grow flex flex-col opacity-50 items-center justify-center">
         <FontAwesomeIcon
           icon={faUserPen}
