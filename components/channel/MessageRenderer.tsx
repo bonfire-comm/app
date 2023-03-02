@@ -18,6 +18,7 @@ import { uniq } from 'lodash-es';
 import highlightElement from '@/lib/helpers/highlightElement';
 import openProfileModal from '@/lib/helpers/openProfileModal';
 import sleep from '@/lib/helpers/sleep';
+import truncate from '@/lib/helpers/truncate';
 import Embed from '../Embed';
 
 const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentData}) => {
@@ -140,6 +141,14 @@ const ReplyIndicator = ({ message, channel }: { message: Message; channel: Chann
     return u;
   }, [replyTo.value]);
 
+  const content = useMemo(() => {
+    const temp = document.createElement('div');
+
+    temp.innerHTML = replyTo.value?.content ?? '';
+
+    return truncate(temp.innerText);
+  }, [replyTo.value]);
+
   const scrollToView = async () => {
     if (!replyTo.value) return;
 
@@ -173,7 +182,7 @@ const ReplyIndicator = ({ message, channel }: { message: Message; channel: Chann
           <h4 className="font-bold">{user.value?.name}</h4>
         </section>
 
-        <p className="cursor-pointer whitespace-nowrap break-keep text-ellipsis" onClick={scrollToView}>{replyTo.value?.content?.replace(/<p>/g, '')?.replace(/<\/p>/g, '')}</p>
+        <p className="cursor-pointer whitespace-nowrap break-keep text-ellipsis" onClick={scrollToView}>{content}</p>
       </section>
     </section>
   );

@@ -36,8 +36,9 @@ const CreateChannelModalContent = ({ channel }: { channel?: Channel }) => {
   });
 
   const participantValues = useAsync(async () => {
+    const ids = channel ? Object.keys(channel.participants) : [];
     const users = (await Promise.all(
-      buddies.added
+      [...buddies.added, ...ids]
         .filter((id) => channel ? !channel.bans[id] : true)
         .map((buddy) => firebaseClient.managers.user.fetch(buddy))
     ))

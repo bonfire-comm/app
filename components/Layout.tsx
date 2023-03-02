@@ -4,7 +4,7 @@ import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
 import { ActionIcon, Divider, Menu, Portal, Tooltip } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEarDeaf, faEarListen, faEllipsisV, faMicrophone, faMicrophoneSlash, faPencil, faPhoneSlash, faPlus, faRightFromBracket, faSignal } from '@fortawesome/free-solid-svg-icons';
+import { faEarDeaf, faEarListen, faEllipsisV, faGear, faMicrophone, faMicrophoneSlash, faPencil, faPhoneSlash, faPlus, faRightFromBracket, faSignal } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
 import CookieSetterBuilder from '@/lib/managers/cookie';
 import openEditProfileModal from '@/lib/helpers/openEditProfileModal';
@@ -28,15 +28,13 @@ interface Props {
 
 const ControlBar = () => {
   const user = useUser();
-  const router = useRouter();
 
   const logout = async () => {
     await new CookieSetterBuilder().remove('token:/').commit();
+    await firebaseClient.auth.signOut();
 
-    Promise.all([
-      firebaseClient.auth.signOut(),
-      router.push('/login')
-    ]);
+    // eslint-disable-next-line no-restricted-globals
+    location.reload();
   };
 
   if (!user) return null;
@@ -64,6 +62,17 @@ const ControlBar = () => {
             }
           >
             Edit profile
+          </Menu.Item>
+
+          <Menu.Item
+            onClick={() => {}}
+            icon={
+              <FontAwesomeIcon
+                icon={faGear}
+              />
+            }
+          >
+            Settings
           </Menu.Item>
 
           <Menu.Item
@@ -244,7 +253,6 @@ export default function Layout({ children, innerHeader = (<section></section>) }
                 />
               </Tooltip>
             </section>
-
 
             <ChannelSelector />
           </section>
