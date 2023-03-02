@@ -1,7 +1,7 @@
 import { Participant } from '@videosdk.live/js-sdk/participant';
 import { useAsync } from 'react-use';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
+import { faEarDeaf, faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
 import firebaseClient from '@/lib/firebase';
 import useUser from '@/lib/store/user';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
@@ -12,9 +12,10 @@ import { useForceUpdate } from '@mantine/hooks';
 interface ParticipantPreviewProps {
   participant: Participant;
   active?: boolean;
+  deafened?: boolean;
 }
 
-const ParticipantPreview = ({ participant, active }: ParticipantPreviewProps) => {
+const ParticipantPreview = ({ participant, active, deafened = false }: ParticipantPreviewProps) => {
   const forceRender = useForceUpdate();
   const user = useAsync(() => firebaseClient.managers.user.fetch(participant.id), [participant]);
   const currentUser = useUser((s) => s?.id);
@@ -75,11 +76,19 @@ const ParticipantPreview = ({ participant, active }: ParticipantPreviewProps) =>
         <video muted playsInline autoPlay className={`${!webcamMediaStream ? 'hidden' : 'aspect-video w-full'}`} ref={webcamVideoRef} />
       )}
 
-      {(currentUser === participant.id ? muted : !participant.micOn) && (
-        <section className="absolute bottom-3 right-3 w-8 h-8 grid place-items-center rounded-full bg-cloudy-500">
-          <FontAwesomeIcon icon={faMicrophoneSlash} size="sm" className="text-red-400" />
-        </section>
-      )}
+      <section className="absolute bottom-3 right-3 flex gap-2">
+        {(currentUser === participant.id ? muted : !participant.micOn) && (
+          <section className="w-8 h-8 grid place-items-center rounded-full bg-cloudy-500">
+            <FontAwesomeIcon icon={faMicrophoneSlash} size="sm" className="text-red-400" />
+          </section>
+        )}
+
+        {deafened && (
+          <section className="w-8 h-8 grid place-items-center rounded-full bg-cloudy-500">
+            <FontAwesomeIcon icon={faEarDeaf} size="sm" className="text-red-400" />
+          </section>
+        )}
+      </section>
     </section>
   );
 };

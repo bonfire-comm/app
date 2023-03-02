@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import EventEmitter from 'eventemitter3';
 import { clone, isEqual, noop } from 'lodash-es';
-import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, remove, serverTimestamp, set, update } from 'firebase/database';
+import { get, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, remove, serverTimestamp, set, update } from 'firebase/database';
 import { collection, deleteDoc, doc, getDocs, query as firestoreQuery, setDoc, updateDoc, where, onSnapshot } from 'firebase/firestore';
 import randomWords from 'random-words';
 import { Meeting } from '@videosdk.live/js-sdk/meeting';
@@ -102,7 +102,6 @@ export default class Channel extends BaseStruct implements ChannelData {
     const messagesQuery = query(
       ref(firebaseClient.rtdb, `channels/${this.id}/messages`),
       orderByChild('createdAt'),
-      limitToLast(50)
     );
 
     const unsubAdded = onChildAdded(messagesQuery, (snap) => {

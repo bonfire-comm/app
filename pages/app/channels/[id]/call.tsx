@@ -17,11 +17,30 @@ import openSettingsModal from '@/lib/helpers/openSettingsModal';
 
 const MeetingView = ({ meeting }: { meeting: Meeting }) => {
   const [deafened, muted, video, activeSpeaker] = useVoice((s) => [s.deafened, s.muted, s.video, s.activeTalker], shallow);
+  const [listDeafened, setListDeafened] = useState<string[]>([]);
+
+  useEffect(() => {
+    const handler = (payload: { message: string }) => {
+      setListDeafened((s) => [...new Set([...s, payload.message]).values()]);
+    };
+
+    const undeafHandler = (payload: { message: string }) => {
+      setListDeafened((s) => s.filter((i) => i !== payload.message));
+    };
+
+    meeting.pubSub.subscribe('deafen', handler);
+    meeting.pubSub.subscribe('undeafen', undeafHandler);
+
+    return () => {
+      meeting.pubSub.unsubscribe('deafen', handler);
+      meeting.pubSub.unsubscribe('undeafen', undeafHandler);
+    };
+  }, [meeting]);
 
   return (
     <>
       <section className="flex gap-3 p-8 items-center justify-center flex-wrap">
-        {[meeting.localParticipant, ...meeting.participants.values()].map((p) => <ParticipantPreview key={p.id} participant={p} active={activeSpeaker === p.id} />)}
+        {[meeting.localParticipant, ...meeting.participants.values()].map((p) => <ParticipantPreview key={p.id} deafened={listDeafened.includes(p.id)} participant={p} active={activeSpeaker === p.id} />)}
       </section>
 
       <section className="absolute bottom-0 p-8 flex items-center justify-center right-0 left-0 gap-4">
@@ -62,6 +81,12 @@ const MeetingView = ({ meeting }: { meeting: Meeting }) => {
             useVoice.setState({
               deafened: toggle,
             });
+
+            if (toggle) {
+              meeting.pubSub.publish('deafen', meeting.localParticipant.id, { persist: false });
+            } else {
+              meeting.pubSub.publish('undeafen', meeting.localParticipant.id, { persist: false });
+            }
           }}
         >
           <FontAwesomeIcon
