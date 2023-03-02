@@ -8,11 +8,12 @@ import firebaseClient from '@/lib/firebase';
 import Channel from '@/lib/classes/channel';
 import { useRouter } from 'next/router';
 import Meta from '@/components/Meta';
-import { faEarDeaf, faEarListen, faMicrophone, faMicrophoneSlash, faPhone, faPhoneSlash, faVideo, faVideoSlash, faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
+import { faEarDeaf, faEarListen, faGear, faMicrophone, faMicrophoneSlash, faPhone, faPhoneSlash, faVideo, faVideoSlash, faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAsync } from 'react-use';
 import { Meeting } from '@videosdk.live/js-sdk/meeting';
 import { Button } from '@mantine/core';
+import openSettingsModal from '@/lib/helpers/openSettingsModal';
 
 const MeetingView = ({ meeting }: { meeting: Meeting }) => {
   const [deafened, muted, video, activeSpeaker] = useVoice((s) => [s.deafened, s.muted, s.video, s.activeTalker], shallow);
@@ -24,6 +25,17 @@ const MeetingView = ({ meeting }: { meeting: Meeting }) => {
       </section>
 
       <section className="absolute bottom-0 p-8 flex items-center justify-center right-0 left-0 gap-4">
+        <span
+          className="bg-cloudy-500 cursor-pointer w-16 aspect-square grid place-items-center rounded-full"
+          onClick={openSettingsModal}
+        >
+          <FontAwesomeIcon
+            icon={faGear}
+            className="transition-colors duration-200 ease-in-out"
+            size="xl"
+          />
+        </span>
+
         <span
           className={`${!muted ? 'bg-cloudy-500' : 'bg-cloudy-50 text-red-500'} cursor-pointer w-16 aspect-square grid place-items-center rounded-full`}
           onClick={() => {

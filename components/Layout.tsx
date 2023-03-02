@@ -4,8 +4,7 @@ import { IdleTimerProvider } from 'react-idle-timer';
 import useUser from '@/lib/store/user';
 import { ActionIcon, Divider, Menu, Portal, Tooltip } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEarDeaf, faEarListen, faEllipsisV, faGear, faMicrophone, faMicrophoneSlash, faPencil, faPhoneSlash, faPlus, faRightFromBracket, faSignal } from '@fortawesome/free-solid-svg-icons';
-import { useRouter } from 'next/router';
+import { faEarDeaf, faEarListen, faEllipsisV, faMicrophone, faMicrophoneSlash, faPencil, faPhoneSlash, faPlus, faRightFromBracket, faSignal } from '@fortawesome/free-solid-svg-icons';
 import CookieSetterBuilder from '@/lib/managers/cookie';
 import openEditProfileModal from '@/lib/helpers/openEditProfileModal';
 import openCreateChannelModal from '@/lib/helpers/openCreateChannelModal';
@@ -62,17 +61,6 @@ const ControlBar = () => {
             }
           >
             Edit profile
-          </Menu.Item>
-
-          <Menu.Item
-            onClick={() => {}}
-            icon={
-              <FontAwesomeIcon
-                icon={faGear}
-              />
-            }
-          >
-            Settings
           </Menu.Item>
 
           <Menu.Item
@@ -220,12 +208,12 @@ export default function Layout({ children, innerHeader = (<section></section>) }
       </Portal>
 
       <main className="grid grid-cols-[20rem_1fr] h-screen w-screen relative overflow-hidden">
-        <section className={`grid ${!meeting ? 'grid-rows-[3.5rem_1fr_6rem]' : 'grid-rows-[3.5rem_1fr_4rem_6rem]'} w-full bg-cloudy-700 bg-opacity-80`}>
+        <section className={`overflow-hidden grid ${!meeting ? 'grid-rows-[3.5rem_1fr_6rem]' : 'grid-rows-[3.5rem_1fr_4rem_6rem]'} w-full bg-cloudy-700 bg-opacity-80`}>
           <section className="shadow flex items-center px-4 w-full h-full">
             <Logo className="h-6" />
           </section>
 
-          <section className="p-4 flex flex-col gap-3 overflow-y-auto">
+          <section className="p-4 flex flex-col gap-3 overflow-hidden">
             <NavLink href="/app">
               <Twemoji>👋</Twemoji>
               <p className="text-lg font-bold text-white">Buddies</p>

@@ -84,12 +84,12 @@ export default function ChannelSelector() {
   });
 
   return (
-    <>
+    <section className="overflow-y-auto flex-grow custom_scrollbar pr-2">
       {channels.map((v) => (
         <NavLink href={`/app/channels/${v.id}`} key={v.id}>
           {v.isDM ? <DMPreview channel={v} /> : <Preview channel={v} />}
         </NavLink>
       ))}
-    </>
+    </section>
   );
 };

@@ -4,6 +4,7 @@ import { clone, isEqual, noop } from 'lodash-es';
 import { get, limitToLast, onChildAdded, onChildChanged, onChildRemoved, orderByChild, push, query, ref, remove, serverTimestamp, set, update } from 'firebase/database';
 import { collection, deleteDoc, doc, getDocs, query as firestoreQuery, setDoc, updateDoc, where, onSnapshot } from 'firebase/firestore';
 import randomWords from 'random-words';
+import { Meeting } from '@videosdk.live/js-sdk/meeting';
 import BaseStruct from './base';
 import firebaseClient from '../firebase';
 import type ChannelManager from '../managers/channels';
@@ -301,13 +302,40 @@ export default class Channel extends BaseStruct implements ChannelData {
       activeChannelId: this.id,
       meeting,
       state: 'CONNECTING',
+      video: false,
     });
 
     if (joinImmediately) {
       meeting.join();
     }
 
+    if (localStorage.mic && await Channel.isValidMic(localStorage.mic, meeting)) {
+      meeting.changeMic(localStorage.mic);
+    }
+
+    if (localStorage.cam && await Channel.isValidCam(localStorage.cam, meeting)) {
+      meeting.changeWebcam(localStorage.cam);
+    }
+
     return meeting;
+  }
+
+  static async isValidMic(id: string, meeting?: Meeting | null) {
+    // eslint-disable-next-line no-param-reassign
+    if (!meeting) meeting = useVoice.getState().meeting;
+    if (!meeting) return false;
+
+    const mics = await meeting.getMics();
+    return mics.some((m) => m.deviceId === id);
+  }
+
+  static async isValidCam(id: string, meeting?: Meeting | null) {
+    // eslint-disable-next-line no-param-reassign
+    if (!meeting) meeting = useVoice.getState().meeting;
+    if (!meeting) return false;
+
+    const cams = await meeting.getWebcams();
+    return cams.some((m) => m.deviceId === id);
   }
 
   async leave() {
