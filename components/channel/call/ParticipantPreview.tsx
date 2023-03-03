@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEarDeaf, faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
 import firebaseClient from '@/lib/firebase';
 import useUser from '@/lib/store/user';
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import useVoice from '@/lib/store/voice';
 import { shallow } from 'zustand/shallow';
 import { useForceUpdate } from '@mantine/hooks';
@@ -35,7 +35,7 @@ const ParticipantPreview = ({ participant, active, deafened = false }: Participa
     }
   }, [webcamOn, webcamStream]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (webcamVideoRef.current && webcamMediaStream) {
       webcamVideoRef.current.srcObject = webcamMediaStream;
 
@@ -62,7 +62,7 @@ const ParticipantPreview = ({ participant, active, deafened = false }: Participa
   }, [participant]);
 
   return (
-    <section className={`group overflow-hidden relative aspect-video max-w-[28rem] min-w-[28rem] bg-cloudy-700 rounded-lg ${!active ? 'border-[3px] border-cloudy-700' : 'border-[3px] border-green-500'} transition-all duration-100 ease-in-out grid place-items-center`}>
+    <section className={`flex-shrink-0 group overflow-hidden relative aspect-video max-w-[22rem] min-w-[22rem] w-full bg-cloudy-700 rounded-lg ${!active ? 'border-[3px] border-cloudy-700' : 'border-[3px] border-green-500'} transition-all duration-100 ease-in-out grid place-items-center`}>
       <section className="group-hover:opacity-100 opacity-0 transition-opacity duration-150 ease-in-out absolute bottom-2 left-2 bg-zinc-800 bg-opacity-75 px-2 rounded-md">
         <p>{user.value?.name}</p>
       </section>

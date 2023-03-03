@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import { useForceUpdate } from '@mantine/hooks';
 import useVoice from '@/lib/store/voice';
 import { shallow } from 'zustand/shallow';
@@ -8,16 +8,21 @@ import firebaseClient from '@/lib/firebase';
 import Channel from '@/lib/classes/channel';
 import { useRouter } from 'next/router';
 import Meta from '@/components/Meta';
-import { faEarDeaf, faEarListen, faGear, faMicrophone, faMicrophoneSlash, faPhone, faPhoneSlash, faVideo, faVideoSlash, faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
+import { faEarDeaf, faEarListen, faGear, faMicrophone, faMicrophoneSlash, faPhone, faPhoneSlash, faShareFromSquare, faVideo, faVideoSlash, faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAsync } from 'react-use';
 import { Meeting } from '@videosdk.live/js-sdk/meeting';
 import { Button } from '@mantine/core';
 import openSettingsModal from '@/lib/helpers/openSettingsModal';
 import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
+import useUser from '@/lib/store/user';
+import PresenterPreview from '@/components/channel/call/PresenterPreview';
 
 const MeetingView = ({ meeting }: { meeting: Meeting }) => {
-  const [deafened, muted, video, activeSpeaker] = useVoice((s) => [s.deafened, s.muted, s.video, s.activeTalker], shallow);
+  const forceUpdate = useForceUpdate();
+  const currentUserId = useUser((s) => s?.id);
+  const [reloadParticipants, setReloadParticipants] = useReducer((s) => s + 1, 0);
+  const [deafened, muted, video, activeSpeaker, screen] = useVoice((s) => [s.deafened, s.muted, s.video, s.activeTalker, s.screen], shallow);
   const [listDeafened, setListDeafened] = useState<string[]>([]);
 
   useEffect(() => {
@@ -32,19 +37,48 @@ const MeetingView = ({ meeting }: { meeting: Meeting }) => {
     meeting.pubSub.subscribe('deafen', handler);
     meeting.pubSub.subscribe('undeafen', undeafHandler);
 
+    meeting.on('participant-joined', setReloadParticipants);
+    meeting.on('participant-left', setReloadParticipants);
+    meeting.on('presenter-changed', forceUpdate);
+
     return () => {
       meeting.pubSub.unsubscribe('deafen', handler);
       meeting.pubSub.unsubscribe('undeafen', undeafHandler);
+      meeting.off('participant-joined', setReloadParticipants);
+      meeting.off('participant-left', setReloadParticipants);
+      meeting.off('presenter-changed', forceUpdate);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meeting]);
 
-  return (
-    <>
-      <section className="flex gap-3 p-8 items-center justify-center flex-wrap">
-        {[meeting.localParticipant, ...meeting.participants.values()].map((p) => <ParticipantPreview key={p.id} deafened={listDeafened.includes(p.id)} participant={p} active={activeSpeaker === p.id} />)}
-      </section>
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const participants = useMemo(() => [meeting.localParticipant, ...meeting.participants.values()], [meeting, reloadParticipants]);
+  const presenterParticipant = useMemo(() => participants.find((p) => p.id === meeting.activePresenterId), [meeting.activePresenterId, participants]);
 
-      <section className="absolute bottom-0 p-8 flex items-center justify-center right-0 left-0 gap-4">
+  return (
+    <section className="flex flex-col gap-4 overflow-hidden">
+      {!meeting.activePresenterId && (
+        <section className="flex gap-3 p-8 items-center justify-center flex-wrap flex-grow">
+          {participants.map((p) => <ParticipantPreview key={p.id} deafened={listDeafened.includes(p.id)} participant={p} active={activeSpeaker === p.id} />)}
+        </section>
+      )}
+
+      {meeting.activePresenterId && (
+        <section className="flex gap-6 flex-grow p-8 overflow-hidden">
+          <section className="flex-grow grid place-items-center flex-shrink">
+            {presenterParticipant && (
+              <PresenterPreview participant={presenterParticipant} />
+            )}
+          </section>
+
+          <section className="overflow-auto flex-shrink-0 flex flex-col gap-3 custom_scrollbar pr-1">
+            {participants.map((p) => <ParticipantPreview key={p.id} deafened={listDeafened.includes(p.id)} participant={p} active={activeSpeaker === p.id} />)}
+          </section>
+        </section>
+      )}
+
+      {/* Controls */}
+      <section className="p-8 flex items-center justify-center right-0 left-0 gap-4">
         <span
           className="bg-cloudy-500 cursor-pointer w-16 aspect-square grid place-items-center rounded-full"
           onClick={openSettingsModal}
@@ -98,7 +132,7 @@ const MeetingView = ({ meeting }: { meeting: Meeting }) => {
         </span>
 
         <span
-          className={`${video ? 'bg-cloudy-500' : 'bg-cloudy-50 text-red-500'} cursor-pointer w-16 aspect-square grid place-items-center rounded-full`}
+          className={`${!video ? 'bg-cloudy-500' : 'bg-cloudy-50 text-red-500'} cursor-pointer w-16 aspect-square grid place-items-center rounded-full`}
           onClick={() => {
             const toggle = !video;
 
@@ -116,6 +150,26 @@ const MeetingView = ({ meeting }: { meeting: Meeting }) => {
         </span>
 
         <span
+          className={`${!meeting.activePresenterId || !screen ? 'bg-cloudy-500' : 'bg-cloudy-50 text-red-500'} ${meeting.activePresenterId && meeting.activePresenterId !== currentUserId ? 'opacity-50 cursor-not-allowed' : ''} cursor-pointer w-16 aspect-square grid place-items-center rounded-full`}
+          onClick={() => {
+            if (meeting.activePresenterId && meeting.activePresenterId !== currentUserId) return;
+
+            const toggle = !screen;
+
+            useVoice.setState({ screen: toggle });
+
+            if (toggle) meeting.enableScreenShare();
+            else meeting.disableScreenShare();
+          }}
+        >
+          <FontAwesomeIcon
+            icon={faShareFromSquare}
+            className="transition-colors duration-200 ease-in-out"
+            size="xl"
+          />
+        </span>
+
+        <span
           className="bg-red-500 text-white cursor-pointer w-16 aspect-square grid place-items-center rounded-full"
           onClick={() => meeting.leave()}
         >
@@ -126,7 +180,7 @@ const MeetingView = ({ meeting }: { meeting: Meeting }) => {
           />
         </span>
       </section>
-    </>
+    </section>
   );
 };
 

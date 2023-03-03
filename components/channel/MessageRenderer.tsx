@@ -19,6 +19,7 @@ import highlightElement from '@/lib/helpers/highlightElement';
 import openProfileModal from '@/lib/helpers/openProfileModal';
 import sleep from '@/lib/helpers/sleep';
 import truncate from '@/lib/helpers/truncate';
+import useProxyURL from '@/lib/helpers/useProxyURL';
 import Embed from '../Embed';
 
 const AttachmentEntry = ({ attachment }: { attachment: ChannelMessageAttachmentData}) => {
@@ -254,7 +255,7 @@ const MessageEntry = memo(({ message, channel, editingMessage }: { message: Mess
       <ActionPopOver message={message} />
 
       <section className="flex items-start gap-4">
-        <img onClick={openProfile} src={user.value?.image} alt="" className="w-12 rounded-full cursor-pointer" />
+        <img onClick={openProfile} src={useProxyURL(user.value?.image)} alt="" className="w-12 rounded-full cursor-pointer" />
 
         <section className="flex-grow">
           <section className="flex gap-3 items-end mb-[2px]">

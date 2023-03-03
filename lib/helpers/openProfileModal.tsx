@@ -14,6 +14,7 @@ import loadImage from './loadImage';
 import getSignificantColor from './getSignificantColor';
 import firebaseClient from '../firebase';
 import openEditProfileModal from './openEditProfileModal';
+import proxyURL from './useProxyURL';
 
 const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { user: User; bannerColor?: string; tone?: 'light' | 'dark' }) => {
   const [user, setUser] = useState(u);
@@ -33,7 +34,7 @@ const ProfileModalContent = ({ user: u, bannerColor = 'rgb(41, 58, 60)' }: { use
       <section className="h-28" style={{ background: bannerColor }}></section>
 
       <section className="relative">
-        <img src={user.image} alt="" className="ml-6 absolute -translate-y-1/2 w-28 h-28 rounded-full border-[8px] border-cloudy-800" draggable={false} />
+        <img src={proxyURL(user.image)} alt="" className="ml-6 absolute -translate-y-1/2 w-28 h-28 rounded-full border-[8px] border-cloudy-800" draggable={false} />
 
         <section className="p-6">
           <section className="flex justify-end h-8 gap-1">

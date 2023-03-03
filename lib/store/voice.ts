@@ -14,6 +14,7 @@ const useVoice = create(
     deafened: false,
     muted: false,
     video: false,
+    screen: false,
     state: 'CONNECTING' as MeetingState,
     activeTalker: null as string | null,
   }, (set) => ({

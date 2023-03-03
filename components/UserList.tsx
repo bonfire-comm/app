@@ -10,6 +10,7 @@ import useBuddies from '@/lib/store/buddies';
 import { MouseEventHandler, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { noop } from '@mantine/utils';
+import proxyUrl from '@/lib/helpers/useProxyURL';
 import AvatarWithStatus from './AvatarWithStatus';
 import Twemoji from './Twemoji';
 
@@ -102,7 +103,7 @@ const UserList = (({
     return (
       <section onClick={onClick} onContextMenu={onContextMenu} className={`flex select-none ${enableClick ? 'hover:bg-cloudy-800 hover:bg-opacity-50 cursor-pointer px-3 py-2 rounded-xl' : ''}`}>
         <section className="flex gap-4 items-center">
-          <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={user.image} status={user.status} />
+          <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={proxyUrl(user.image) as string} status={user.status} />
 
           <section>
             <h3 className="font-extrabold text-lg flex gap-1 items-center">
@@ -127,7 +128,7 @@ const UserList = (({
   return (
     <section className="select-none p-4 bg-cloudy-500 rounded-lg flex bg-opacity-80 justify-between items-center gap-4">
       <section className="flex gap-4 items-center">
-        <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={user.image} status={user.status} />
+        <AvatarWithStatus indicatorSize={indicatorSize} imageSize={avatarSize} image={proxyUrl(user.image) as string} status={user.status} />
 
         <section>
           <h3 className="font-extrabold text-lg flex gap-1 items-center">
