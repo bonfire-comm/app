@@ -14,6 +14,7 @@ import { useAsync } from 'react-use';
 import { Meeting } from '@videosdk.live/js-sdk/meeting';
 import { Button } from '@mantine/core';
 import openSettingsModal from '@/lib/helpers/openSettingsModal';
+import authenticatedServerProps from '@/lib/helpers/authenticatedServerProps';
 
 const MeetingView = ({ meeting }: { meeting: Meeting }) => {
   const [deafened, muted, video, activeSpeaker] = useVoice((s) => [s.deafened, s.muted, s.video, s.activeTalker], shallow);
@@ -226,3 +227,5 @@ const VoiceModalContent = () => {
 };
 
 export default VoiceModalContent;
+
+export const getServerSideProps = authenticatedServerProps();
