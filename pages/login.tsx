@@ -61,9 +61,12 @@ export default function Login() {
   });
 
   useEffect(() => {
-    if (id) {
-      router.push('/app');
-    }
+    (async () => {
+      if (id) {
+        await firebaseClient.generateToken();
+        router.push('/app');
+      }
+    })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

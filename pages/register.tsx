@@ -50,6 +50,7 @@ export default function Register() {
 
     try {
       await firebaseClient.createUserWithEmailAndPassword(values.email, values.password);
+      await firebaseClient.generateToken();
       await router.push('/onboarding');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
