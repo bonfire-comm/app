@@ -13,6 +13,7 @@ import { useRouter } from 'next/router';
 import useUser from '@/lib/store/user';
 import { useEffect } from 'react';
 import bigButtonClass from '@/lib/helpers/bigButtonClass';
+import guestServerProps from '@/lib/helpers/guestServerProps';
 
 export default function Register() {
   const id = useUser((s) => s?.id);
@@ -127,3 +128,5 @@ export default function Register() {
     </>
   );
 }
+
+export const getServerSideProps = guestServerProps();

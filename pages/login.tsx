@@ -13,6 +13,7 @@ import useUser from '@/lib/store/user';
 import { useEffect } from 'react';
 import { z } from 'zod';
 import bigButtonClass from '@/lib/helpers/bigButtonClass';
+import guestServerProps from '@/lib/helpers/guestServerProps';
 
 export default function Login() {
   const id = useUser((s) => s?.id);
@@ -126,3 +127,5 @@ export default function Login() {
     </>
   );
 }
+
+export const getServerSideProps = guestServerProps();
