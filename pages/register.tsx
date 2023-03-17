@@ -52,7 +52,7 @@ export default function Register() {
     try {
       await firebaseClient.createUserWithEmailAndPassword(values.email, values.password);
       await firebaseClient.generateToken();
-      await router.push('/onboarding');
+      await router.push('/verify');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {

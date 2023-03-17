@@ -31,6 +31,21 @@ const authenticatedServerProps = (handler?: GetServerSidePropsWithUser) => {
       };
     }
 
+    if (!user.emailVerified) {
+      if (ctx.resolvedUrl.startsWith('/verify')) {
+        return {
+          props: {}
+        };
+      }
+
+      return {
+        redirect: {
+          permanent: true,
+          destination: '/verify',
+        }
+      };
+    }
+
     const profile = (await admin.firestore()
       .collection('users')
       .doc(user.uid)

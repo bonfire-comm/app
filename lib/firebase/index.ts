@@ -2,6 +2,8 @@ import { FirebaseApp, FirebaseOptions, initializeApp } from 'firebase/app';
 import {
   Auth,
   User,
+  applyActionCode,
+  checkActionCode,
   confirmPasswordReset,
   connectAuthEmulator,
   createUserWithEmailAndPassword,
@@ -190,6 +192,14 @@ export class Firebase {
 
   verifyPasswordResetCode(code: string) {
     return verifyPasswordResetCode(this.auth, code);
+  }
+
+  verifyEmailVerificationCode(code: string) {
+    return checkActionCode(this.auth, code);
+  }
+
+  verifyEmail(code: string) {
+    return applyActionCode(this.auth, code);
   }
 
   async signOut(redirect = true) {
