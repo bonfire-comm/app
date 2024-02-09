@@ -7,27 +7,31 @@ const YOUTUBE_ID_REGEX = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&
 export const EmbedMediaPreview = ({ data }: { data: EmbedData}) => {
   const Container = ({ children }: { children: ReactNode }) => <section className="mt-2 rounded-lg overflow-hidden">{children}</section>;
 
-  if (data.publisher === 'YouTube') {
-    const matched = data.url?.match(YOUTUBE_ID_REGEX);
-    const id = matched && matched[2];
-    if (!id) return null;
+  if (!data.publisher && !data.image && !data.audio) return null;
 
-    return (
-      <Container>
-        <YouTube videoId={id} className="w-full" iframeClassName="w-full h-64 object-fit" />
-      </Container>
-    );
-  }
+  return (
+    <Container>
+      {(() => {
+        const matched = data.url?.match(YOUTUBE_ID_REGEX);
+        const id = matched && matched[2];
+        if (!id) return null;
 
-  if (data.image) {
-    return (
-      <Container>
+        return (
+          <Container>
+            <YouTube videoId={id} className="w-full" iframeClassName="w-full h-64 object-fit" />
+          </Container>
+        );
+      })()}
+
+      {!!data.image && (
         <img src={data.image} alt="" />
-      </Container>
-    );
-  }
+      )}
 
-  return null;
+      {!!data.audio && (
+        <audio controls src={data.audio} />
+      )}
+    </Container>
+  );
 };
 
 export default function Embed({ data }: { data: EmbedData }) {

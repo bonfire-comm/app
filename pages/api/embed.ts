@@ -10,16 +10,20 @@ import MetaTitle from 'metascraper-title';
 import MetaUrl from 'metascraper-url';
 import MetaYoutube from 'metascraper-youtube';
 import MetaSpotify from 'metascraper-spotify';
+import MetaTwitter from 'metascraper-twitter';
+import MetaInstagram from 'metascraper-instagram';
 
 const parser = metascraper([
+  MetaSpotify(),
+  MetaTwitter(),
+  MetaInstagram(),
+  MetaYoutube(),
   MetaAuthor(),
   MetaDescription(),
   MetaImage(),
   MetaLogo(),
   MetaTitle(),
   MetaUrl(),
-  MetaYoutube(),
-  MetaSpotify(),
   (() => ({
     color: [
       // @ts-expect-error - This is a valid usage
